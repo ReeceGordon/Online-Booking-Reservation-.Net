@@ -1,0 +1,528 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Shared.Identity
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+@using BlazorInputFile
+@if (!isLoading)
+{
+    <div class="ml-4">
+        <table class="mt-5 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">Personal Details</h2></td>
+            </tr>
+        </table>
+        <hr />
+        <table class="ml-2">
+            <tr>
+                <td class="NonSelectable">Name:</td>
+                <td><input readonly value="@PrivateDetails[0].Name" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Surname:</td>
+                <td><input readonly value="@PrivateDetails[0].Surname" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Phone Number:</td>
+                <td><input type="number" readonly value="@PrivateDetails[0].Phone_Number" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Email:</td>
+                <td><input readonly value="@PrivateDetails[0].Email" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Details:</td>
+                <td><textarea cols="40" rows="5" style="resize:none" @bind="Details" /></td>
+            </tr>
+            <tr>
+                <td colspan="2"><h6 style="color:darkred" class="NonSelectable ml-2 mt-2">@GeneralError</h6></td>
+            </tr>
+            <tr class="mt-2">
+                <td></td>
+                <td><button @onclick="SavePersonal" class="btn btn-success w-100">Save</button></td>
+            </tr>
+        </table>
+
+        <!--Security Section-->
+
+        <table class="mt-4 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">Security</h2></td>
+            </tr>
+        </table>
+        <hr class="NonSelectable" />
+        @if (pChangeResult != null)
+        {
+            @foreach (var error in pChangeResult.Errors)
+            {
+                if (error == "Password successfully changed.")
+                {
+                    <div class="col-md-2 alert alert-success" role="alert">
+                        <p>@error</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-2 alert alert-danger" role="alert">
+                        <p>@error</p>
+                    </div>
+                }
+            }
+        }
+        <EditForm Model="changePasswordModel" OnValidSubmit="HandlePassChange">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <div class="col-md-2">
+                    <InputText placeholder="Current Password" type="password" autocomplete="current-password" Id="password" Class="form-control " @bind-Value="changePasswordModel.OldPassword" />
+                    <ValidationMessage For="@(() => changePasswordModel.OldPassword)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-md-2">
+                    <InputText placeholder="New Password" Id="password" type="password" autocomplete="new-password" Class="form-control " @bind-Value="changePasswordModel.NewPassword" />
+                    <ValidationMessage For="@(() => changePasswordModel.NewPassword)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-md-2">
+                    <InputText placeholder="Confirm New Password" Id="password" type="password" autocomplete="new-password" Class="form-control " @bind-Value="changePasswordModel.ConfirmNewPassword" />
+                    <ValidationMessage For="@(() => changePasswordModel.ConfirmNewPassword)" />
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <button class="btn btn-success" type="submit">Change Password</button>
+            </div>
+        </EditForm>
+
+        <!--Images Section
+
+        <h2 class="mt-4 ml-2 NonSelectable">Images</h2>
+        <h6 class="NonSelectable ml-2" style="color:darkred;">Note: Click on an Image to enlarge it and edit it</h6>
+        <hr class="NonSelectable" />
+        <table>
+            <tr>
+                <td  class="NonSelectable"><img class="NonSelectable rounded ml-2" src="images/Carousel/@CarouselImg1" alt="@CarouselImg1" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image1" @onclick='(() => OpenImage("images/Carousel/Image1.jpg","Image1"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="images/Carousel/@CarouselImg2" alt="@CarouselImg2" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image2" @onclick='(() => OpenImage("images/Carousel/Image2.jpg","Image2"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="images/Carousel/@CarouselImg3" alt="@CarouselImg3" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image3" @onclick='(() => OpenImage("images/Carousel/Image3.jpg","Image3"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="images/Carousel/@CarouselImg4" alt="@CarouselImg4" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image4" @onclick='(() => OpenImage("images/Carousel/Image4.jpg","Image4"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="images/@LogoImg" alt="@LogoImg" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Logo" @onclick='(() => OpenImage("images/Logo.png","Logo"))' /></td>
+            </tr>
+        </table>-->
+        <!--Opening Section-->
+
+        <table class="mt-4 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">Work Hours settings</h2></td>
+            </tr>
+        </table>
+        <hr class="NonSelectable" />
+        <table class="ml-2 mb-4" style="text-align:center;">
+            <tr>
+                <th>Day</th>
+                <th>Opening<br />Hour</th>
+                <th>To</th>
+                <th>Closing<br />Hour</th>
+                <th>Closed</th>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Monday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[0].Opening" max="@ShopHours[0].Closing" @bind="MondayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[0].Opening" max="@ShopHours[0].Closing" @bind="MondayClosing" /></td>
+                @if (ShopHours[0].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[0].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="MondayClosed" /><br /></td>
+                }
+            </tr>
+            <tr>
+                <td class="NonSelectable">Tuesday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[1].Opening" max="@ShopHours[1].Closing" @bind="TuesdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[1].Opening" max="@ShopHours[1].Closing" @bind="TuesdayClosing" /></td>
+                @if (ShopHours[1].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[1].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="TuesdayClosed" /><br /></td>
+                }
+            </tr>
+            <tr>
+                <td class="NonSelectable">Wednesday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[2].Opening" max="@ShopHours[2].Closing" @bind="WednesdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[2].Opening" max="@ShopHours[2].Closing" @bind="WednesdayClosing" /></td>
+                @if (ShopHours[2].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[2].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="WednesdayClosed" /><br /></td>
+                }
+            </tr>
+            <tr>
+                <td class="NonSelectable">Thursday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[3].Opening" max="@ShopHours[3].Closing" @bind="ThursdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[3].Opening" max="@ShopHours[3].Closing" @bind="ThursdayClosing" /></td>
+                @if (ShopHours[3].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[3].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="ThursdayClosed" /><br /></td>
+                }
+            </tr>
+            <tr>
+                <td class="NonSelectable">Friday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[4].Opening" max="@ShopHours[4].Closing" @bind="FridayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[4].Opening" max="@ShopHours[4].Closing" @bind="FridayClosing" /></td>
+                @if (ShopHours[4].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[4].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="FridayClosed" /><br /></td>
+                }
+            </tr>
+            <tr>
+                <td class="NonSelectable">Saturday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[5].Opening" max="@ShopHours[5].Closing" @bind="SaturdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[5].Opening" max="@ShopHours[5].Closing" @bind="SaturdayClosing" /></td>
+                @if (ShopHours[5].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[5].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="SaturdayClosed" /><br /></td>
+                }
+            </tr>
+            <tr>
+                <td class="NonSelectable">Sunday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[6].Opening" max="@ShopHours[6].Closing" @bind="SundayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="@ShopHours[6].Opening" max="@ShopHours[6].Closing" @bind="SundayClosing" /></td>
+                @if (ShopHours[6].Closed)
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" onclick="return false;" @bind="@ShopHours[6].Closed" /><br /></td>
+                }
+                else
+                {
+                    <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="SundayClosed" /><br /></td>
+                }
+
+
+            </tr>
+            <tr>
+                <td colspan="5"><h6 style="color:darkred" class="NonSelectable ml-2 mt-2">@OpeningError</h6></td>
+            </tr>
+            <tr class="mt-2">
+                <td style="padding:0 15px 0 15px;"></td>
+                <td colspan="4" style="padding:0 15px 0 15px;"><button @onclick="SaveHours" class="btn btn-success w-100">Save</button></td>
+            </tr>
+        </table>
+
+
+    </div>
+
+    @if (ImageEditor)
+    {
+        <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+            <div class="vertical-alignment-helper">
+                <div class="modal-dialog vertical-align-center" role="document">
+                    <div class="modal-content" style="max-width: 51vw">
+                        <div class="modal-header">
+                            <h5 class="modal-title NonSelectable"></h5>
+                            <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="CloseImageEditor">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <img id="DisplayImage" class="NonSelectable rounded" src="@DisplayImage" alt="DisplayImage" style="height:50vh;width:50vw;object-fit:fill;margin-left:-0.5rem;" />
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseImageEditor">Cancel</button>
+                            <button type="button" class="btn btn-info" @onclick="ChangeClick">Change</button>
+                            <InputFile OnChange="HandleFileSelected" accept="image/x-png,image/gif,image/jpeg" />
+                            <button type="button" class="btn btn-success" @onclick="UploadImage">Save</button>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+@code {
+
+    private RegisterResult pChangeResult { get; set; }
+    private ChangePasswordModel changePasswordModel = new ChangePasswordModel();
+
+
+    private async Task HandlePassChange()
+    {
+        pChangeResult = await Http.PostJsonAsync<RegisterResult>("api/accounts/ChangePassword", changePasswordModel);
+
+        if (pChangeResult.Successful)
+        {
+            changePasswordModel.OldPassword = "";
+            changePasswordModel.NewPassword = "";
+            changePasswordModel.ConfirmNewPassword = "";
+            Console.WriteLine("Password Successfully Changed.");
+        }
+        else
+        {
+            Console.WriteLine("Password Couldn't be changed!");
+        }
+    }
+
+
+    [Parameter] public string Id { get; set; }
+    private int MondayOpening, TuesdayOpening, WednesdayOpening, ThursdayOpening, FridayOpening, SaturdayOpening, SundayOpening;
+    private int MondayClosing, TuesdayClosing, WednesdayClosing, ThursdayClosing, FridayClosing, SaturdayClosing, SundayClosing;
+    private bool MondayClosed, TuesdayClosed, WednesdayClosed, ThursdayClosed, FridayClosed, SaturdayClosed, SundayClosed, Require_Aproval;
+    private long Phone_Number;
+    private string Port, Email, Address, Currency, Password, Email_Sender, SmtpServer, Email_Pass, SSL, Company_Name, New_Password, Re_Password, LogoImg, CarouselImg1, CarouselImg2, CarouselImg3, CarouselImg4;
+    private OpeningModel[] ShopHours;
+    private WorkingHoursModel[] hours;
+    private StaffModel[] PrivateDetails;
+    private bool isLoading = true;
+    private string SecurityError = "";
+    private string GeneralError = "";
+    private string EmailError = "";
+    private string OpeningError = "";
+    private string DisplayImage = "";
+    private string Details = "";
+    private bool ImageEditor = false;
+    private string ImageType;
+    private MultipartContent Image;
+
+    /// <summary>
+    /// once the page initializes the shop hours,private details of the staff and the working hours of the staff are loaded
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        ShopHours = await Http.GetJsonAsync<OpeningModel[]>("Opening");
+        PrivateDetails = await Http.GetJsonAsync<StaffModel[]>($"Staff/Get/{Id}");
+        hours = await Http.GetJsonAsync<WorkingHoursModel[]>($"WorkingHours/{Id}");
+        Details = PrivateDetails[0].Details;
+        SetHours();
+        isLoading = false;
+    }
+    /// <summary>
+    /// changes the image of the staff member
+    /// </summary>
+    /// <param name="files"></param>
+    /// <returns></returns>
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            // Just load into .NET memory to show it can be done
+            // Alternatively it could be saved to disk, or parsed in memory, or similar
+            var ms = new MemoryStream();
+            await file.Data.CopyToAsync(ms);
+            Console.WriteLine(ImageType + "." + file.Name.Split(".")[1]);
+            Image = new MultipartFormDataContent {
+                { new ByteArrayContent(ms.GetBuffer()), "\"upload\"", ImageType + "." + file.Name.Split(".")[1] }
+            };
+
+            await JSRuntime.InvokeVoidAsync("previewFile", "DisplayImage");
+        }
+    }
+    /// <summary>
+    /// uploads the image
+    /// </summary>
+    /// <returns></returns>
+    private async Task UploadImage()
+    {
+        var response = await Http.PostJsonAsync<ResponseModel>("Upload", Image);
+        await JSRuntime.InvokeVoidAsync("previewFile", ImageType);
+        if (response.Status)
+        {
+            CloseImageEditor();
+        }
+    }
+    /// <summary>
+    /// sets the hours of the staff member
+    /// </summary>
+    private void SetHours()
+    {
+        Console.WriteLine(hours.Length);
+        MondayOpening = Convert.ToInt16(hours[0].MondayHours.Split("-")[0]);
+        TuesdayOpening = Convert.ToInt16(hours[0].TuesdayHours.Split("-")[0]);
+        WednesdayOpening = Convert.ToInt16(hours[0].WednesdayHours.Split("-")[0]);
+        ThursdayOpening = Convert.ToInt16(hours[0].ThursdayHours.Split("-")[0]);
+        FridayOpening = Convert.ToInt16(hours[0].FridayHours.Split("-")[0]);
+        SaturdayOpening = Convert.ToInt16(hours[0].SaturdayHours.Split("-")[0]);
+        SundayOpening = Convert.ToInt16(hours[0].SundayHours.Split("-")[0]);
+        MondayClosing = Convert.ToInt16(hours[0].MondayHours.Split("-")[1]);
+        TuesdayClosing = Convert.ToInt16(hours[0].TuesdayHours.Split("-")[1]);
+        WednesdayClosing = Convert.ToInt16(hours[0].WednesdayHours.Split("-")[1]);
+        ThursdayClosing = Convert.ToInt16(hours[0].ThursdayHours.Split("-")[1]);
+        FridayClosing = Convert.ToInt16(hours[0].FridayHours.Split("-")[1]);
+        SaturdayClosing = Convert.ToInt16(hours[0].SaturdayHours.Split("-")[1]);
+        SundayClosing = Convert.ToInt16(hours[0].SundayHours.Split("-")[1]);
+        MondayClosed = hours[0].MondayClosed;
+        TuesdayClosed = hours[0].TuesdayClosed;
+        WednesdayClosed = hours[0].WednesdayClosed;
+        ThursdayClosed = hours[0].ThursdayClosed;
+        FridayClosed = hours[0].FridayClosed;
+        SaturdayClosed = hours[0].SaturdayClosed;
+        SundayClosed = hours[0].SundayClosed;
+    }
+    /// <summary>
+    /// saves personal information of the staff members
+    /// </summary>
+    /// <returns></returns>
+    private async Task SavePersonal()
+    {
+        if (Details == "")
+        {
+            GeneralError = "Details can not be empty";
+        }
+        else
+        {
+            StaffModel data = new StaffModel
+            {
+                Staff_Id = Id,
+                Name = PrivateDetails[0].Name,
+                Surname = PrivateDetails[0].Surname,
+                Phone_Number = PrivateDetails[0].Phone_Number,
+                Email = PrivateDetails[0].Email,
+                Image = PrivateDetails[0].Image,
+                Details = Details
+            };
+            GeneralError = "";
+            await Http.PutJsonAsync("Staff", data);
+        }
+
+
+
+    }
+    /// <summary>
+    /// save security of the staff member such as password
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveSecurity()
+    {
+        if (New_Password == "" || Re_Password == "" || Password == "")
+        {
+            SecurityError = "Fields can not be empty";
+        }
+        if (New_Password == Re_Password)
+        {
+            if (Re_Password != "")
+            {
+                SettingsModel data = new SettingsModel
+                {
+
+                };
+
+                await Http.PutJsonAsync("Settings", data);
+                SecurityError = "";
+            }
+            else
+            {
+                SecurityError = "Invalid Current Password";
+            }
+        }
+        else
+        {
+            SecurityError = "Passwords do not match";
+        }
+
+    }
+    /// <summary>
+    /// saves the staff members working hours
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveHours()
+    {
+        if (MondayOpening >= MondayClosing || TuesdayOpening >= TuesdayClosing || WednesdayOpening >= WednesdayClosing || ThursdayOpening >= ThursdayClosing || FridayOpening >= FridayClosing || SaturdayOpening >= SaturdayClosing || SundayOpening >= SundayClosing)
+        {
+            OpeningError = "Opening Time can not be greater or equal than the Closing Time";
+        }
+        else if (MondayClosing <= MondayOpening || TuesdayClosing <= TuesdayOpening || WednesdayClosing <= WednesdayOpening || ThursdayClosing <= ThursdayOpening || FridayClosing <= FridayOpening || SaturdayClosing <= SaturdayOpening || SundayClosing <= SundayOpening)
+        {
+            OpeningError = "Closing Time can not be less or equal than the Opening Time";
+        }
+        else
+        {
+
+            WorkingHoursModel Data = new WorkingHoursModel
+            {
+                Staff_Id = Id,
+                MondayHours = MondayOpening.ToString() + "-" + MondayClosing.ToString(),
+                TuesdayHours = TuesdayOpening.ToString() + "-" + TuesdayClosing.ToString(),
+                WednesdayHours = WednesdayOpening.ToString() + "-" + WednesdayClosing.ToString(),
+                ThursdayHours = ThursdayOpening.ToString() + "-" + ThursdayClosing.ToString(),
+                FridayHours = FridayOpening.ToString() + "-" + FridayClosing.ToString(),
+                SaturdayHours = SaturdayOpening.ToString() + "-" + SaturdayClosing.ToString(),
+                SundayHours = SundayOpening.ToString() + "-" + SundayClosing.ToString(),
+                MondayClosed = MondayClosed,
+                TuesdayClosed = TuesdayClosed,
+                WednesdayClosed = WednesdayClosed,
+                ThursdayClosed = ThursdayClosed,
+                FridayClosed = FridayClosed,
+                SaturdayClosed = SaturdayClosed,
+                SundayClosed = SundayClosed
+            };
+
+
+            await Http.PutJsonAsync("WorkingHours", Data);
+            OpeningError = "";
+        }
+    }
+    /// <summary>
+    /// opens the image of the staff member
+    /// </summary>
+    /// <param name="ImageName">the name of the image</param>
+    /// <param name="Type"> the type of the image</param>
+    /// <returns></returns>
+    private async Task OpenImage(string ImageName, string Type)
+    {
+
+        ImageType = Type;
+        DisplayImage = await JSRuntime.InvokeAsync<string>("DisplayGetImage", Type);
+        ImageEditor = true;
+    }
+    /// <summary>
+    /// close image editor modal
+    /// </summary>
+    private void CloseImageEditor()
+    {
+        ImageEditor = false;
+    }
+    /// <summary>
+    /// open the image selector
+    /// </summary>
+    private void ChangeClick()
+    {
+        JSRuntime.InvokeVoidAsync("FileInputClick");
+    }
+
+}

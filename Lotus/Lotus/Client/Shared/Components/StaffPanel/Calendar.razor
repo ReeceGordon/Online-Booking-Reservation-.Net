@@ -1,0 +1,1643 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+@using System.Globalization;
+
+
+@if (!isLoading)
+{
+
+    if (!DaySchedulerMode)
+    {
+
+        <div class=" rounded-top" style="width:100%;margin:0 auto;background:rgb(82, 82, 82);border: solid black 1px;">
+            <button class="mt-2 mb-2 ml-2 rounded NonSelectable btn btn-outline-info" @onclick="GetAppointments"><i style="color:whitesmoke;" class="fas fa-sync-alt"></i></button>
+            <button class="mt-2 mb-2 ml-2 rounded NonSelectable btn btn-outline-primary" @onclick="(() => Today(false))">Today</button>
+            <input type="text" class=" mt-2 mb-2 ml-2 datetimepicker-input NonSelectable" id="datetimepickermonth" data-toggle="datetimepicker" @onblur="(() => GoToDate(false))" data-target="#datetimepickermonth" />
+            <button class=" ml-2 mt-2 mb-2  rounded NonSelectable btn btn-warning" style="color: white" @onclick="ApprovalOpen">For Approval <span class="badge badge-light rounded-circle">@WaitingAppointments.Count()</span></button>
+            <button class=" mt-2 mb-2  rounded NonSelectable btn btn-outline-success" style="color: white" @onclick="NewAppointmentModal">New</button>
+            <button class=" mt-2 mb-2 ml-2 mr-2 rounded NonSelectable btn btn-outline-light" style="float:right;" @onclick="Next"><i class="fas fa-chevron-right"></i></button>
+            <button class="mt-2 mb-2 rounded NonSelectable btn btn-outline-light" @onclick="Previous" style="float:right;"><i class="fas fa-chevron-left"></i></button>
+        </div>
+
+        <table class="NonSelectable" style="width:100%;margin:0 auto;border: solid black 1px;border-top:none;text-align:center;table-layout: fixed;">
+            <tr style="background:grey;" class="mt-2 mb-2">
+                <th style="border-right:solid black 1px;color: white;">Monday</th>
+                <th style="border-right:solid black 1px;color: white;">Tuesday</th>
+                <th style="border-right:solid black 1px;color: white;">Wednesday</th>
+                <th style="border-right:solid black 1px;color: white;">Thursday</th>
+                <th style="border-right:solid black 1px;color: white;">Friday</th>
+                <th style="border-right:solid black 1px;color: white;">Saturday</th>
+                <th style="color: white;">Sunday</th>
+            </tr>
+        </table>
+        <table class="NonSelectable" style="width: 100%;height: 91.1%;margin: 0 auto;border: solid black 1px;border-top: none;table-layout: fixed;background: whitesmoke;">
+            <tr style="height:140px;">
+                @for (int i = 0; i <= 6; i++)
+                {
+                    string day = CalendarDays[i];
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+
+                    <td valign="top" style="border:solid black 1px;background:@bgcolor;">
+
+                        @if (ShowCurrMonth && IndexOfToday == i)
+                        {
+                            <label class="ml-1 DayHeading" style="color:red;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        else
+                        {
+                            <label class="ml-1 DayHeading" style="color:@textColor;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        <div style="max-height:100px;overflow:auto;">
+                            @foreach (var app in appointments)
+                            {
+                                if (app.App_Date.ToString("dd/MM/yyyy") == @CalendarDays[i])
+                                {
+                                    string type = "btn-success";
+                                    if (app.Status == "Waiting")
+                                    {
+                                        type = "btn-warning";
+                                    }
+                                    <div class="NonSelectable rounded @type mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,day))">
+                                        <span class="ml-1">@app.Start-@app.End</span>
+                                        <br />
+                                        <span class="ml-1">@app.Full_Name</span>
+                                    </div>
+                                }
+
+                            }
+                        </div>
+
+                    </td>
+                }
+            </tr>
+            <tr style="height:140px;">
+                @for (int i = 7; i <= 13; i++)
+                {
+                    string day = CalendarDays[i];
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+
+                    <td valign="top" style="border:solid black 1px;background:@bgcolor;">
+                        @if (ShowCurrMonth && IndexOfToday == i)
+                        {
+                            <label class="ml-1 DayHeading" style="color:red;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        else
+                        {
+                            <label class="ml-1 DayHeading" style="color:@textColor;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        <div style="max-height:100px;overflow:auto;">
+                            @foreach (var app in appointments)
+                            {
+                                if (app.App_Date.ToString("dd/MM/yyyy") == @CalendarDays[i])
+                                {
+                                    string type = "btn-success";
+                                    if (app.Status == "Waiting")
+                                    {
+                                        type = "btn-warning";
+                                    }
+                                    <div class="NonSelectable rounded @type mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,day))">
+                                        <span class="ml-1">@app.Start-@app.End</span>
+                                        <br />
+                                        <span class="ml-1">@app.Full_Name</span>
+                                    </div>
+                                }
+
+                            }
+                        </div>
+                    </td>
+                }
+            </tr>
+            <tr style="height:140px;">
+                @for (int i = 14; i <= 20; i++)
+                {
+                    string day = CalendarDays[i];
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+
+                    <td valign="top" style="border:solid black 1px;background:@bgcolor;">
+                        @if (ShowCurrMonth && IndexOfToday == i)
+                        {
+                            <label class="ml-1 DayHeading" style="color:red;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        else
+                        {
+                            <label class="ml-1 DayHeading" style="color:@textColor;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        <div style="max-height:100px;overflow:auto;">
+                            @foreach (var app in appointments)
+                            {
+                                if (app.App_Date.ToString("dd/MM/yyyy") == @CalendarDays[i])
+                                {
+                                    string type = "btn-success";
+                                    if (app.Status == "Waiting")
+                                    {
+                                        type = "btn-warning";
+                                    }
+                                    <div class="NonSelectable rounded @type mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,day))">
+                                        <span class="ml-1">@app.Start-@app.End</span>
+                                        <br />
+                                        <span class="ml-1">@app.Full_Name</span>
+                                    </div>
+                                }
+
+                            }
+                        </div>
+                    </td>
+                }
+            </tr>
+            <tr style="height:140px;">
+                @for (int i = 21; i <= 27; i++)
+                {
+                    string day = CalendarDays[i];
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+
+                    <td valign="top" style="border:solid black 1px;background:@bgcolor;">
+                        @if (ShowCurrMonth && IndexOfToday == i)
+                        {
+                            <label class="ml-1 DayHeading" style="color:red;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        else
+                        {
+                            <label class="ml-1  DayHeading" style="color:@textColor;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        <div style="max-height:100px;overflow:auto;">
+                            @foreach (var app in appointments)
+                            {
+                                if (app.App_Date.ToString("dd/MM/yyyy") == @CalendarDays[i])
+                                {
+                                    string type = "btn-success";
+                                    if (app.Status == "Waiting")
+                                    {
+                                        type = "btn-warning";
+                                    }
+                                    <div class="NonSelectable rounded @type mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,day))">
+                                        <span class="ml-1">@app.Start-@app.End</span>
+                                        <br />
+                                        <span class="ml-1">@app.Full_Name</span>
+                                    </div>
+                                }
+
+                            }
+                        </div>
+                    </td>
+                }
+            </tr>
+            <tr style="height:140px;">
+                @for (int i = 28; i <= 34; i++)
+                {
+                    string day = CalendarDays[i];
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+
+                    <td valign="top" style="border:solid black 1px;background:@bgcolor;">
+                        @if (ShowCurrMonth && IndexOfToday == i)
+                        {
+                            <label class="ml-1 DayHeading" style="color:red;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        else
+                        {
+                            <label class="ml-1 DayHeading" style="color:@textColor;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        <div style="max-height:100px;overflow:auto;">
+                            @foreach (var app in appointments)
+                            {
+                                if (app.App_Date.ToString("dd/MM/yyyy") == @CalendarDays[i])
+                                {
+                                    string type = "btn-success";
+                                    if (app.Status == "Waiting")
+                                    {
+                                        type = "btn-warning";
+                                    }
+                                    <div class="NonSelectable rounded @type mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,day))">
+                                        <span class="ml-1">@app.Start-@app.End</span>
+                                        <br />
+                                        <span class="ml-1">@app.Full_Name</span>
+                                    </div>
+                                }
+
+                            }
+                        </div>
+                    </td>
+                }
+            </tr>
+            <tr style="height:140px;">
+                @for (int i = 35; i <= 41; i++)
+                {
+                    string day = CalendarDays[i];
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+
+                    <td valign="top" style="border:solid black 1px;background:@bgcolor;">
+                        @if (ShowCurrMonth && IndexOfToday == i)
+                        {
+                            <label class="ml-1 DayHeading" style="color:red;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        else
+                        {
+                            <label class="ml-1 DayHeading" style="color:@textColor;" @onclick="(() => DaySchedule(day))">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                        }
+                        <div style="max-height:100px;overflow:auto;">
+                            @foreach (var app in appointments)
+                            {
+                                if (app.App_Date.ToString("dd/MM/yyyy") == @CalendarDays[i])
+                                {
+                                    string type = "btn-success";
+                                    if (app.Status == "Waiting")
+                                    {
+                                        type = "btn-warning";
+                                    }
+                                    <div class="NonSelectable rounded @type mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,day))">
+                                        <span class="ml-1">@app.Start-@app.End</span>
+                                        <br />
+                                        <span class="ml-1">@app.Full_Name</span>
+                                    </div>
+                                }
+
+                            }
+                        </div>
+                    </td>
+                }
+            </tr>
+        </table>
+    }
+    else
+    {
+        <div class=" rounded-top" style="width:100%;margin:0 auto;background:rgb(82, 82, 82);border: solid black 1px;">
+            <button class="mt-2 mb-2 ml-2 rounded NonSelectable btn btn-outline-info" @onclick="Refresh"><i style="color:whitesmoke;" class="fas fa-sync-alt"></i></button>
+            <button class="mt-2 mb-2 ml-2 rounded NonSelectable btn btn-outline-primary" @onclick="(() => Today(true))">Today</button>
+            <button class="mt-2 mb-2 ml-2 rounded NonSelectable btn btn-outline-info" @onclick='(() => DaySchedule("none"))'>Month</button>
+            <input type="text" class=" mt-2 mb-2 ml-2 datetimepicker-input NonSelectable" id="datetimepickerday" data-toggle="datetimepicker" @onblur="(() => GoToDate(true))" data-target="#datetimepickerday" />
+            <button class=" mt-2 mb-2 ml-2 mr-2 rounded NonSelectable btn btn-outline-light" style="float:right;" @onclick="NextDay"><i class="fas fa-chevron-right"></i></button>
+            <button class="mt-2 mb-2 rounded NonSelectable btn btn-outline-light" @onclick="PreviousDay" style="float:right;"><i class="fas fa-chevron-left"></i></button>
+        </div>
+        if (isEmpty)
+        {
+
+            <div style="height:91.5vh; overflow-y:auto;width:100%; margin: 0 auto;">
+                <table class="DayScheduler" style="width:100%;background-color:white">
+
+                    @foreach (var time in TimesList)
+                    {
+
+                        <tr>
+                            <th style="width:5%">@time.ToString("HH:mm")</th>
+
+                            <td></td>
+                        </tr>
+
+                    }
+
+                </table>
+            </div>
+        }
+        else
+        {
+            <div style="height:91.5vh; overflow-y:auto;width:100%; margin: 0 auto;">
+                <table class="DayScheduler" style="width:100%;background-color:white">
+
+                    @foreach (var time in TimesList)
+                    {
+
+                        <tr>
+                            <th style="width:5%">@time.ToString("HH:mm")</th>
+
+                            @foreach (var app in appointments)
+                            {
+                                @if (@date.ToString("dd/MM/yyyy") == app.App_Date.ToString("dd/MM/yyyy"))
+                                {
+                                    if (time.ToString("HH:mm") == app.Start)
+                                    {
+                                        string Numrows = (app.Duration / 30).ToString();
+                                        string type = "stage-success";
+                                        if (app.Status == "Waiting")
+                                        {
+                                            type = "stage-warning";
+                                        }
+
+                                        <td @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,true,null))" rowspan="@Numrows" class="@type">@app.Start-@app.End @app.Type <span>@app.Full_Name</span></td>
+
+                                    }
+
+
+                                }
+                            }
+                        </tr>
+
+                    }
+
+                </table>
+            </div>
+        }
+
+
+    }
+
+
+}
+
+@if (AppointmentsModal)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        @if (EditMode)
+                        {
+                            <h5 class="modal-title NonSelectable">@selectedDate @CurrentStartTime.ToString("HH:mm")-@CurrentEndTime.ToString("HH:mm")</h5>
+                        }
+                        else if (ApprovalMode)
+                        {
+                            <h5 class="modal-title NonSelectable">For Approval List</h5>
+                        }
+
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="CloseOpenModal">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @if (EditMode && ApprovalMode)
+                        {
+                            <div>
+
+                                @foreach (var app in WaitingAppointments)
+                                {
+                                    if (app.Id == @CurrentAppointment)
+                                    {
+                                        string statusColor = "green";
+                                        if (app.Status == "Waiting")
+                                        {
+                                            statusColor = "#bfaf00";
+                                        }
+                                        <table>
+                                            <tr>
+                                                <td>Type: </td>
+                                                <td class="ml-1" colspan="3"> @app.Type</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Name: </td>
+                                                <td class="ml-1" colspan="3">@app.Full_Name</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Email: </td>
+                                                <td class="ml-1" colspan="3">@CurrentEmail</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Phone Number: </td>
+                                                <td class="ml-1" colspan="3">@CurrentPhone</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Member Notes: </td>
+                                                <td class="ml-1" colspan="3"> <textarea cols="35" rows="2" readonly style="resize:none;">@CurrentNotes</textarea> </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Status: </td>
+                                                <td class="ml-1" colspan="3"> <span style="color: @statusColor;">@app.Status</span></td>
+                                            </tr>
+                                            <tr style="height:1vh;" />
+                                            <tr>
+                                                <td>Date: </td>
+                                                <td class="ml-1" colspan="3">
+                                                    <input type="date" @bind="@CurrentDate">
+                                                </td>
+                                            </tr>
+                                            <tr style="height:1vh;" />
+                                            <tr>
+                                                <td>Time: </td>
+                                                <td class="ml-1" colspan="3"><input value="@CurrentStartTime.ToString("HH:mm")" id="StartTime" @onchange="SetEndTime" type="time" min="09:00" max="21:00" step="1800" required /> - <input value="@CurrentEndTime.ToString("HH:mm")" type="time" min="09:00" max="21:00" step="1800" readonly required /></td>
+                                            </tr>
+                                        </table>
+                                        <table class="justify-content-center text-center w-100">
+                                            @if (app.Status == "Waiting")
+                                            {
+                                                <tr><td> <button class="btn btn-success mt-1 w-75" style="margin:0 auto;" @onclick="ApproveAppointment">Approve Appointment</button></td></tr>
+
+                                            }
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-info mt-1 w-75" @onclick="Update">Save Changes</button>
+                                                </td>
+                                            </tr>
+                                            @if (app.Status == "Waiting")
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <button class="btn btn-danger mt-1 w-75">Cancel Appointment</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <button class="btn btn-danger mt-1 w-75">Reject Appointment</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </table>
+
+                                    }
+
+                                }
+                            </div>
+                        }
+                        else if (EditMode && !ApprovalMode)
+                        {
+                            <div>
+
+                                @foreach (var app in appointments)
+                                {
+                                    if (app.Id == @CurrentAppointment)
+                                    {
+                                        string statusColor = "green";
+                                        if (app.Status == "Waiting")
+                                        {
+                                            statusColor = "#bfaf00";
+                                        }
+                                        <table>
+                                            <tr>
+                                                <td>Type: </td>
+                                                <td class="ml-1" colspan="3"> @app.Type</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Name: </td>
+                                                <td class="ml-1" colspan="3">@app.Full_Name</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Email: </td>
+                                                <td class="ml-1" colspan="3">@CurrentEmail</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Phone Number: </td>
+                                                <td class="ml-1" colspan="3">@CurrentPhone</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Member Notes: </td>
+                                                <td class="ml-1" colspan="3"> <textarea cols="35" rows="2" readonly style="resize:none;">@CurrentNotes</textarea> </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Status: </td>
+                                                <td class="ml-1" colspan="3"> <span style="color: @statusColor;">@app.Status</span></td>
+                                            </tr>
+                                            <tr style="height:1vh;" />
+                                            <tr>
+                                                <td>Date: </td>
+                                                <td class="ml-1" colspan="3">
+                                                    <input type="date" @bind="@CurrentDate">
+                                                </td>
+                                            </tr>
+                                            <tr style="height:1vh;" />
+                                            <tr>
+                                                <td>Time: </td>
+                                                <td class="ml-1" colspan="3"><input value="@CurrentStartTime.ToString("HH:mm")" id="StartTime" @onchange="SetEndTime" type="time" min="09:00" max="21:00" step="1800" required /> - <input value="@CurrentEndTime.ToString("HH:mm")" type="time" min="09:00" max="21:00" step="1800" readonly required /></td>
+                                            </tr>
+                                        </table>
+                                        <table class="justify-content-center text-center w-100">
+                                            @if (app.Status == "Waiting")
+                                            {
+                                                <tr><td> <button class="btn btn-success mt-1 w-75" style="margin:0 auto;" @onclick="ApproveAppointment">Approve Appointment</button></td></tr>
+
+                                            }
+                                            <tr>
+                                                <td>
+                                                    <button class="btn btn-info mt-1 w-75" @onclick="Update">Save Changes</button>
+                                                </td>
+                                            </tr>
+                                            @if (app.Status != "Waiting")
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <button class="btn btn-danger mt-1 w-75" @onclick="Delete">Cancel Appointment</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <button class="btn btn-danger mt-1 w-75" @onclick="Delete">Reject Appointment</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </table>
+
+                                    }
+
+                                }
+                            </div>
+                        }
+                        else if (ApprovalMode)
+                        {
+                            {
+                                <div style="height:500px; overflow:auto">
+                                    @foreach (var app in WaitingAppointments)
+                                    {
+
+                                        <div class="NonSelectable rounded btn-warning mt-1" style="color:white;width:98%;margin:0 auto;cursor:pointer;" @onclick="(() => EditAppointment(app.Id,app.Type,app.Duration,app.Start,app.End,app.App_Date,app.Member_Id,false,null))">
+                                            <span class="ml-1">@app.App_Date.ToString("dd/MM/yyyy") @app.Start-@app.End</span>
+                                            <br />
+                                            <span class="ml-1">@app.Full_Name</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+
+                    </div>
+                    <div class="modal-footer">
+                        @if (EditMode)
+                        {
+                            if (ImidiateOptionActive)
+                            {
+                                <button type="button" class="btn btn-secondary" @onclick="CloseOpenModal">Close</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary" @onclick="closeEditMode">Back</button>
+                            }
+
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="CloseOpenModal">Close</button>
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (AddModal)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title NonSelectable">New Appointment</h5>
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="NewAppointmentModal">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+
+
+                        @if (Step == 0)
+                        {
+
+                            <table class="w-100">
+                                <tr>
+                                    <td style="text-align:center" colspan="3">
+                                        <div class="input-group" style="width:100%; margin:0 auto;">
+                                            <input type="text" class="form-control" @bind="criteria">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-danger" @onclick="(() => search(true))">x</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="text-align:center">
+                                        <button class="btn btn-success rounded mb-2" style="width:100%" @onclick="(() => search(false))">Search</button>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="height:300px;overflow-y:auto;">
+                                <table style="border-collapse:collapse;">
+
+                                    @foreach (var member in Members)
+                                    {
+                                        <tr @onclick="(() => GetCategories(member.Member_Id,member.Name,member.Surname,member.Notes,member.Phone_Number,member.Email))" id="rowhover" style="cursor:pointer;">
+                                            <td style="text-align:center;border-collapse:initial;">
+                                                <div class="circleBase NonSelectable" style="display:table;border:solid;  border-radius: 50%; height:80px;width:80px;margin: 0 auto;border-color:@member.Border;background-color:@member.Color;">
+                                                    <h3 style="display:table-cell; vertical-align:middle;" class="NonSelectable">@member.Name[0]@member.Surname[0]</h3>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @member.Name @member.Surname
+                                            </td>
+                                            <td style="vertical-align: middle; width:5%;">
+                                                <span class="rounded-circle" style="margin: 0.5em">
+                                                    <i class="fas fa-chevron-right" style="color: black"></i>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+
+                                </table>
+                            </div>
+                        }
+                        else if (Step == 1)
+                        {
+                            <div style="height:300px;overflow-y:auto;">
+                                <table style="border-collapse:collapse;">
+
+                                    @foreach (var category in Categories)
+                                    {
+                                        if (PrivillagesList.Contains(category.Id))
+                                        {
+                                            <tr @onclick="(() => GetServices(category.Id,category.Name))" id="rowhover" style="cursor:pointer;">
+                                                <td>
+                                                    @category.Name
+                                                </td>
+                                                <td style="vertical-align: middle; width:5%;">
+                                                    <span class="rounded-circle" style="margin: 0.5em">
+                                                        <i class="fas fa-chevron-right" style="color: black"></i>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+
+                                    }
+
+                                </table>
+                            </div>
+                        }
+                        else if (Step == 2)
+                        {
+                            <div style="height:300px;overflow-y:auto;">
+                                <table style="border-collapse:collapse;">
+
+                                    @foreach (var service in Services)
+                                    {
+                                        string price = service.Price.ToString();
+                                        if (price.Contains("."))
+                                        {
+                                            if (price.Split(".")[1].Length == 1)
+                                            {
+                                                price += "0";
+                                            }
+                                        }
+
+                                    <tr @onclick="(() => SetFinalAddScreen(service.Name, service.Duration))" id="rowhover" style="cursor:pointer;">
+                                        <td>
+                                            @service.Name
+                                        </td>
+                                        <td>
+                                            @settings[0].Currency@price
+                                        </td>
+                                        <td style="vertical-align: middle; width:5%;">
+                                            <span class="rounded-circle" style="margin: 0.5em">
+                                                <i class="fas fa-chevron-right" style="color: black"></i>
+                                            </span>
+                                        </td>
+                                    </tr>
+
+
+                                    }
+
+                                </table>
+                            </div>
+                        }
+                        else if (Step == 3)
+                        {
+                            <div >
+                                <table>
+                                    <tr>
+                                        <td>Type: </td>
+                                        <td class="ml-1" colspan="3"> @CurrType</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Name: </td>
+                                        <td class="ml-1" colspan="3">@CurrFullName</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Email: </td>
+                                        <td class="ml-1" colspan="3">@CurrentEmail</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Phone Number: </td>
+                                        <td class="ml-1" colspan="3">@CurrentPhone</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Member Notes: </td>
+                                        <td class="ml-1" colspan="3"> <textarea cols="35" rows="2" readonly style="resize:none;">@CurrentNotes</textarea> </td>
+                                    </tr>
+                                    <tr style="height:1vh;" />
+                                    <tr>
+                                        <td>Date: </td>
+                                        <td class="ml-1" colspan="3">
+                                            <input type="date" @bind="@CurrentDate">
+                                        </td>
+                                    </tr>
+                                    <tr style="height:1vh;" />
+                                    <tr>
+                                        <td>Time: </td>
+                                        <td class="ml-1" colspan="3"><input value="@CurrentStartTime.ToString("HH:mm")" id="StartTime" @onchange="SetEndTime" type="time" min="09:00" max="21:00" step="1800" required /> - <input value="@CurrentEndTime.ToString("HH:mm")" type="time" min="09:00" max="21:00" step="1800" readonly required /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="modal-footer">
+                        @if (Step == 0)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="NewAppointmentModal">Close</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="PreviousStep">Back</button>
+                        }
+                        @if (Step == 3)
+                        {
+                            <button type="button" class="btn btn-success" @onclick="Add">Create</button>
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; }
+    int CurrentAppointment, CurrentDuration, IndexOfToday, Step = 0;
+    long CurrentPhone = 0;
+    DateTime CurrentStartTime, CurrentEndTime, CurrentDate;
+    string CurrentEmail, CurrentNotes,criteria = "";
+    string selectedDate, curMonth, DisplayDate, CurrMemberID, CurrFullName,CurrType = "";
+    bool EditMode, ApprovalMode, ImidiateOptionActive, DaySchedulerMode, isEmpty, AppointmentsModal, AddModal = false;
+    bool ShowCurrMonth, isLoading = true;
+    DateTime OldDate, OldStartTime;
+    DateTime date = DateTime.Now;
+    AppointmentsModel[] appointments;
+    AppointmentsModel[] WaitingAppointments;
+    StaffAssignmentModel[] Privillages;
+    CategoriesModel[] Categories;
+    SettingsModel[] settings;
+    List<string> PrivillagesList = new List<string>();
+    ServiceModel[] Services;
+    MembersModel[] Members;
+    StaffModel[] StaffDetails;
+    List<string> BorderColorList = new List<string> { "darkblue", "darkcyan", "darkgreen", "darkmagenta", "darkseagreen", "darksalmon" };
+    List<string> BackgroundColorList = new List<string> { "lightblue", "lightcyan", "lightgreen", "lightpink", "lightseagreen", "lightsalmon" };
+    string[] Days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    List<string> CalendarDays = new List<string>();
+    List<DateTime> StartTimes, EndTimes, TimesList = new List<DateTime>();
+    System.Threading.Timer timer;
+    /// <summary>
+    /// loads the staff details and initializes the calendar of the staff 
+    /// loads the setting of the company 
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        DateTime StartTime = DateTime.ParseExact("07:00", "HH:mm", CultureInfo.InvariantCulture);
+        DateTime EndTime = DateTime.ParseExact("23:00", "HH:mm", CultureInfo.InvariantCulture);
+
+        while (StartTime <= EndTime)
+        {
+            TimesList.Add(StartTime);
+            StartTime = StartTime.AddMinutes(30);
+        }
+
+        await SetCalendar();
+        StaffDetails = await Http.GetJsonAsync<StaffModel[]>($"Staff/Get/{Id}");
+        settings = await Http.GetJsonAsync<SettingsModel[]>("Settings");
+        isLoading = false;
+        var startTimeSpan = TimeSpan.Zero;
+        var periodTimeSpan = TimeSpan.FromMilliseconds(500);
+
+        timer = new System.Threading.Timer(async (e) =>
+        {
+            await CheckRendering(true);
+        }, null, startTimeSpan, periodTimeSpan);
+    }
+    /// <summary>
+    /// Checks to see if the calendar widget is rendered if it is to initialize it
+    /// </summary>
+    /// <param name="month">used to identify which calander widget is being rendered</param>
+    /// <returns></returns>
+
+    protected async Task CheckRendering(bool month)
+    {
+        if(month)
+        {
+            if (await JSRuntime.InvokeAsync<bool>("checkRendering", "datetimepickermonth"))
+            {
+                await initializeCalendar(false);
+                await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+                timer.Dispose();
+            }
+        }
+        else
+        {
+            if (await JSRuntime.InvokeAsync<bool>("checkRendering", "datetimepickerday"))
+            {
+                await initializeCalendar(true);
+                await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickerday", date.ToString("dd MMMM yyyy"));
+                timer.Dispose();
+            }
+        }
+
+
+    }
+
+    /// <summary>
+    /// filters the members based on the criteria
+    /// </summary>
+    /// <param name="clear">boolean value to indicate if the filter should be removed</param>
+    /// <returns></returns>
+    private async Task search(bool clear)
+    {
+        if (clear)
+        {
+            criteria = "";
+            Members = await Http.GetJsonAsync<MembersModel[]>("Members");
+            RandColorScheme();
+        }
+        else if(criteria != "")
+        {
+            Members = await Http.GetJsonAsync<MembersModel[]>($"Members/Search/{criteria}");
+            RandColorScheme();
+        }
+        else
+        {
+            criteria = "";
+            Members = await Http.GetJsonAsync<MembersModel[]>("Members");
+            RandColorScheme();
+        }
+    }
+    /// <summary>
+    /// 
+    /// initialized the mini calendar for navigation
+    /// </summary>
+    /// <param name="dayscheduler">where in moth view or day scheduler</param>
+    /// <returns></returns>
+    private async Task initializeCalendar(bool dayscheduler)
+    {
+        if (!dayscheduler)
+        {
+            await JSRuntime.InvokeVoidAsync("SetCalendarMonth");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("SetCalendarDay");
+        }
+
+    }
+    /// <summary>
+    /// creates new appointments
+    /// </summary>
+    /// <returns></returns>
+    private async Task NewAppointmentModal()
+    {
+        if (AddModal)
+        {
+            AddModal = false;
+            Step = 0;
+        }
+        else
+        {
+            Members = await Http.GetJsonAsync<MembersModel[]>("Members");
+            RandColorScheme();
+            AddModal = true;
+            Step = 0;
+        }
+    }
+    /// <summary>
+    /// selects a random color scheme of each member
+    /// </summary>
+    private void RandColorScheme()
+    {
+
+
+        foreach (var member in Members)
+        {
+            var rand = new Random();
+            int index = rand.Next(6);
+            member.Border = BorderColorList[index];
+            member.Color = BackgroundColorList[index];
+        }
+
+    }
+    /// <summary>
+    /// goes to the next step
+    /// </summary>
+    private void NextStep()
+    {
+        if ((Step + 1) < 4)
+        {
+            Step++;
+        }
+    }
+    /// <summary>
+    /// goes to the previous step
+    /// </summary>
+    private void PreviousStep()
+    {
+        if ((Step - 1) > -1)
+        {
+            Step--;
+        }
+    }
+    /// <summary>
+    /// goes to the specific date selected by the staff member
+    /// </summary>
+    /// <param name="dayScheduler">where in moth view or day scheduler</param>
+    /// <returns></returns>
+    async Task GoToDate(bool dayScheduler)
+    {
+
+
+        if (!dayScheduler)
+        {
+            string Result = await JSRuntime.InvokeAsync<string>("GetText", "datetimepickermonth");
+            date = DateTime.ParseExact("01/" + Result.Split(" ")[0] + "/" + Result.Split(" ")[1], "dd/MMMM/yyyy", CultureInfo.InvariantCulture);
+            ShowCurrMonth = false;
+            if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+            {
+                ShowCurrMonth = true;
+            }
+        }
+        else
+        {
+            string Result = await JSRuntime.InvokeAsync<string>("GetText", "datetimepickerday");
+            date = DateTime.ParseExact(Result.Split(" ")[0] + "/" + Result.Split(" ")[1] + "/" + Result.Split(" ")[2], "dd/MMMM/yyyy", CultureInfo.InvariantCulture);
+            ShowCurrMonth = false;
+            if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+            {
+                ShowCurrMonth = true;
+            }
+
+        }
+
+        await SetCalendar();
+        CheckEmpty();
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    private async Task SetCalendar()
+    {
+
+        DisplayDate = date.ToString("MMMM yyyy");
+        CalendarDays.Clear();
+        int year = date.Year;
+        int month = date.Month;
+        int days = DateTime.DaysInMonth(year, month);
+        DateTime dateValue = new DateTime(year, month, 1);
+        int FirstDay = Array.IndexOf(Days, dateValue.DayOfWeek.ToString());
+        IndexOfToday = (FirstDay - 1) + (DateTime.Now.Day);
+        ShowCurrMonth = true;
+        curMonth = month.ToString();
+        if (month.ToString().Length == 1)
+        {
+            curMonth = "0" + curMonth;
+        }
+        if (FirstDay != 0)
+        {
+            DateTime dateBefore = date.AddMonths(-1);
+            int maxDays = DateTime.DaysInMonth(dateBefore.Year, dateBefore.Month);
+            for (int i = FirstDay - 1; i >= 0; i--)
+            {
+                string temp_month = dateBefore.Month.ToString();
+                if (temp_month.Length == 1)
+                {
+                    temp_month = "0" + temp_month;
+                }
+                string temp_day = (maxDays - i).ToString();
+                if (temp_day.Length == 1)
+                {
+                    temp_day = "0" + temp_day;
+                }
+                CalendarDays.Add(temp_day + "/" + temp_month + "/" + dateBefore.Year);
+            }
+        }
+        for (int i = 1; i <= days; i++)
+        {
+            string temp_month = month.ToString();
+            if (temp_month.Length == 1)
+            {
+                temp_month = "0" + temp_month;
+            }
+            string temp_day = i.ToString();
+            if (temp_day.Length == 1)
+            {
+                temp_day = "0" + temp_day;
+            }
+            CalendarDays.Add(temp_day + "/" + temp_month + "/" + year);
+        }
+        int remaining = 42 - CalendarDays.Count();
+        DateTime dateAfter = date.AddMonths(1);
+        for (int i = 1; i <= remaining; i++)
+        {
+            string temp_month = dateAfter.Month.ToString();
+            if (temp_month.Length == 1)
+            {
+                temp_month = "0" + temp_month;
+            }
+            string temp_day = i.ToString();
+            if (temp_day.Length == 1)
+            {
+                temp_day = "0" + temp_day;
+            }
+            CalendarDays.Add(temp_day + "/" + temp_month + "/" + dateAfter.Year);
+        }
+        await GetAppointments();
+    }
+
+    /// <summary>
+    /// used to refresh appointments
+    /// </summary>
+    /// <returns></returns>
+    private async Task GetAppointments()
+    {
+        string From = CalendarDays[0];
+        string To = CalendarDays[CalendarDays.Count() - 1];
+        From = From.Split("/")[2] + "-" + From.Split("/")[1] + "-" + From.Split("/")[0];
+        To = To.Split("/")[2] + "-" + To.Split("/")[1] + "-" + To.Split("/")[0];
+        appointments = await Http.GetJsonAsync<AppointmentsModel[]>($"Appointments/Get/{From}/{To}/{Id}");
+        WaitingAppointments = await Http.GetJsonAsync<AppointmentsModel[]>($"Appointments/GetWaiting/{Id}");
+    }
+    /// <summary>
+    /// refreshes appointments
+    /// </summary>
+    /// <returns></returns>
+    private async Task Refresh()
+    {
+        await GetAppointments();
+        CheckEmpty();
+    }
+    /// <summary>
+    /// check if there are not records for that day
+    /// </summary>
+    private void CheckEmpty()
+    {
+        isEmpty = true;
+        foreach (var app in appointments)
+        {
+            if (app.App_Date.ToString("dd/MM/yyyy") == date.ToString("dd/MM/yyyy"))
+            {
+                isEmpty = false;
+                break;
+            }
+        }
+
+    }
+    /// <summary>
+    /// gets the categories the staff member is assigned to 
+    /// </summary>
+    /// <param name="ID">id of the  member</param>
+    /// <param name="Name">the name of the member</param>
+    /// <param name="Surname">surname of the member</param>
+    /// <param name="Notes">notes of the member</param>
+    /// <param name="Phone_Number">the phone number of the member</param>
+    /// <param name="Email">the email of the member</param>
+    /// <returns></returns>
+    private async Task GetCategories(string ID,string Name,string Surname,string Notes,long Phone_Number,string Email)
+    {
+        CurrMemberID = ID;
+        CurrFullName = Name + " " + Surname;
+        CurrentNotes = Notes;
+        CurrentPhone = Phone_Number;
+        CurrentEmail = Email;
+        PrivillagesList.Clear();
+        Privillages = await Http.GetJsonAsync<StaffAssignmentModel[]>($"StaffAssignment/GetByStaffId/{Id}");
+        foreach(var Privilage in Privillages)
+        {
+            PrivillagesList.Add(Privilage.Category_Id);
+        }
+        Categories = await Http.GetJsonAsync<CategoriesModel[]>("Categories");
+        NextStep();
+
+    }
+    /// <summary>
+    /// loads all services belonging to the category
+    /// </summary>
+    /// <param name="Category_ID">the id of the category</param>
+    /// <param name="Name">the name of the category</param>
+    /// <returns></returns>
+    private async Task GetServices(string Category_ID,string Name)
+    {
+        CurrType = Name;
+        Services = await Http.GetJsonAsync<ServiceModel[]>($"Service/{Category_ID}");
+        NextStep();
+    }
+    /// <summary>
+    /// sets the final screen of the booking
+    /// </summary>
+    /// <param name="Type">the type of the booking</param>
+    /// <param name="Duration">the duration of the booking</param>
+    private void SetFinalAddScreen(string Type,int Duration)
+    {
+        if(CurrType.Contains("/"))
+        {
+            CurrType = CurrType.Split("/")[0] + "/" + Type;
+        }
+        else
+        {
+            CurrType += "/" + Type;
+        }
+
+        CurrentDuration = Duration;
+        CurrentStartTime = DateTime.ParseExact("07:00", "HH:mm", CultureInfo.InvariantCulture);
+        CurrentEndTime = CurrentStartTime.AddMinutes(Duration);
+        CurrentDate = DateTime.Now;
+        NextStep();
+    }
+    /// <summary>
+    /// checks to see of the appointment can be changed or created at that hour 
+    /// </summary>
+    /// <returns>true or false</returns>
+    private bool CheckAvailability()
+    {
+        bool Acceptance = true;
+
+        foreach (var app in appointments)
+        {
+            DateTime tempStart = DateTime.ParseExact(app.Start, "HH:mm", CultureInfo.InvariantCulture);
+            DateTime tempEnd = DateTime.ParseExact(app.End, "HH:mm", CultureInfo.InvariantCulture);
+            if (app.App_Date.ToString("dd/MM/yyyy") == CurrentDate.ToString("dd/MM/yyyy"))
+            {
+                if (app.Start == CurrentStartTime.ToString("HH:mm") && app.End == CurrentEndTime.ToString("HH:mm") && CurrentAppointment != app.Id)
+                {
+                    Acceptance = false;
+                }
+                else if (CurrentStartTime.ToString("HH:mm") == app.Start && CurrentAppointment != app.Id)
+                {
+                    Acceptance = false;
+                }
+                else if (CurrentEndTime.ToString("HH:mm") == app.End && CurrentAppointment != app.Id)
+                {
+                    Acceptance = false;
+                }
+                else if (CurrentStartTime > tempStart && CurrentStartTime < tempEnd && CurrentAppointment != app.Id)
+                {
+                    Acceptance = false;
+                }
+                else if (CurrentEndTime > tempStart && CurrentEndTime < tempEnd && CurrentAppointment != app.Id)
+                {
+                    Acceptance = false;
+                }
+            }
+        }
+        return Acceptance;
+    }
+    /// <summary>
+    /// updates the appointment
+    /// </summary>
+    /// <returns></returns>
+    private async Task Update()
+    {
+        if (OldDate.ToString("dd/MM/yyyy") != CurrentDate.ToString("dd/MM/yyyy") && CurrentStartTime.ToString("HH:mm") != OldStartTime.ToString("HH:mm"))
+        {
+
+
+            bool Acceptance = CheckAvailability();
+
+
+            if (Acceptance)
+            {
+                var data = new AppointmentsModel
+                {
+                    Id = CurrentAppointment,
+                    Start = CurrentStartTime.ToString("HH:mm"),
+                    End = CurrentEndTime.ToString("HH:mm"),
+                    App_Date = CurrentDate
+
+                };
+
+                ResponseModel response = await Http.PutJsonAsync<ResponseModel>("Appointments/Update", data);
+
+                if (response.Status)
+                {
+                    await GetAppointments();
+                    if (ImidiateOptionActive)
+                    {
+                        CloseOpenModal();
+                    }
+                    closeEditMode();
+
+
+                    string EmailBody = Lotus.Client.Properties.Resources.Email;
+
+                    EmailBody = EmailBody.Replace("[Title]", "Your Booking has been changed!");
+                    EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+                    EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that your booking has been changed and we hope to see you soon close to us.");
+                    EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/4176dd05c2edc7ed1d4dcf1ad462bb36.png");
+                    EmailBody = EmailBody.Replace("[Footer]", "[OldBooking] <br/> <br/> [NewBooking]");
+                    EmailBody = EmailBody.Replace("[OldBooking]", "Old Booking Recap:<br /> Date: [OldDate]<br /> Time: [OldTime]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+                    EmailBody = EmailBody.Replace("[NewBooking]", "New Booking Recap:<br /> Date: [NewDate]<br /> Time: [NewTime]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+                    EmailBody = EmailBody.Replace("[NewDate]", CurrentDate.ToString("dddd MMM dd, yyyy"));
+                    EmailBody = EmailBody.Replace("[NewTime]", CurrentStartTime.ToString("hh:mm tt"));
+                    EmailBody = EmailBody.Replace("[OldDate]", OldDate.ToString("dddd MMM dd, yyyy"));
+                    EmailBody = EmailBody.Replace("[OldTime]", OldStartTime.ToString("hh:mm tt"));
+                    EmailBody = EmailBody.Replace("[Type]", CurrType);
+                    EmailBody = EmailBody.Replace("[Staff]", StaffDetails[0].Name + " " + StaffDetails[0].Surname);
+                    EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+                    EmailBody = EmailBody.Replace("[End]", settings[0].Company_Name);
+                    MembersModel[] EmailMember = await Http.GetJsonAsync<MembersModel[]>($"Member/Get/{CurrMemberID}");
+                    var email = new EmailModel
+                    {
+                        Subject = "Your Booking has been Changed",
+                        To = EmailMember[0].Email,
+                        Body = EmailBody,
+                        HtmlBody = true
+                    };
+
+                    OldStartTime = CurrentStartTime;
+                    OldDate = CurrentDate;
+                    ResponseModel result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Reject");
+            }
+        }
+    }
+    /// <summary>
+    /// adds the appointment
+    /// </summary>
+    /// <returns></returns>
+    private async Task Add()
+    {
+        bool Acceptance = CheckAvailability();
+
+
+        if (Acceptance)
+        {
+            var data = new AppointmentsModel
+            {
+                Full_Name = CurrFullName,
+                Type = CurrType,
+                Staff_Id = Id,
+                Member_Id = CurrMemberID,
+                Start = CurrentStartTime.ToString("HH:mm"),
+                End = CurrentEndTime.ToString("HH:mm"),
+                Duration = CurrentDuration,
+                Status = "Confirmed",
+                App_Date = CurrentDate
+
+            };
+
+            ResponseModel response = await Http.PostJsonAsync<ResponseModel>("Appointments", data);
+
+            if (response.Status)
+            {
+                await GetAppointments();
+                await NewAppointmentModal();
+
+                string EmailBody = Lotus.Client.Properties.Resources.Email;
+
+                EmailBody = EmailBody.Replace("[Title]", "Your Booking is Made And Confirmed");
+                EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+                EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that your booking is confirmed and we hope to see you soon close to us.");
+                EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/4176dd05c2edc7ed1d4dcf1ad462bb36.png");
+                EmailBody = EmailBody.Replace("[Footer]", "Booking Recap:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+                EmailBody = EmailBody.Replace("[Date]", CurrentDate.ToString("dddd MMM dd, yyyy"));
+                EmailBody = EmailBody.Replace("[Time]", CurrentStartTime.ToString("hh:mm tt"));
+                EmailBody = EmailBody.Replace("[Type]", CurrType);
+                EmailBody = EmailBody.Replace("[Staff]", StaffDetails[0].Name + " " + StaffDetails[0].Surname);
+                EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+                EmailBody = EmailBody.Replace("[End]", settings[0].Company_Name);
+                MembersModel[] EmailMember = await Http.GetJsonAsync<MembersModel[]>($"Member/Get/{CurrMemberID}");
+                var email = new EmailModel
+                {
+                    Subject = "About your booking",
+                    To = EmailMember[0].Email,
+                    Body = EmailBody,
+                    HtmlBody = true
+                };
+
+                ResponseModel result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+
+
+            }
+        }
+        else
+        {
+            Console.WriteLine("Reject");
+        }
+    }
+    /// <summary>
+    /// deletes an appointment
+    /// </summary>
+    /// <returns></returns>
+    private async Task Delete()
+    {
+        await Http.DeleteAsync($"Appointments/{CurrentAppointment}");
+        await GetAppointments();
+        if (ImidiateOptionActive)
+        {
+            CloseOpenModal();
+        }
+        closeEditMode();
+        string EmailBody = Lotus.Client.Properties.Resources.Email;
+        EmailBody = EmailBody.Replace("[Title]", "Your Booking sadly has been rejected!");
+        EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+        EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that your booking has been rejected as the staff member can not see you please book again at a different date or time.");
+        EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/ee65e1da6c0b32904252d994d5d3296d.jpg");
+        EmailBody = EmailBody.Replace("[Footer]", "Rejected Booking Recap:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+        EmailBody = EmailBody.Replace("[Date]", CurrentDate.ToString("dddd MMM dd, yyyy"));
+        EmailBody = EmailBody.Replace("[Time]", CurrentStartTime.ToString("hh:mm tt"));
+        EmailBody = EmailBody.Replace("[Type]", CurrType);
+        EmailBody = EmailBody.Replace("[Staff]", StaffDetails[0].Name + " " + StaffDetails[0].Surname);
+        EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+        EmailBody = EmailBody.Replace("[End]", settings[0].Company_Name);
+        var email = new EmailModel
+        {
+            Subject = "Your Booking has been Rejected",
+            To = CurrentEmail,
+            Body = EmailBody,
+            HtmlBody = true
+        };
+
+        ResponseModel result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+    }
+    /// <summary>
+    /// shows the time scheduler of the specific day 
+    /// </summary>
+    /// <param name="Daydate">the date to show the scheduler for</param>
+    /// <returns></returns>
+    private void DaySchedule(string Daydate)
+    {
+
+        if (DaySchedulerMode)
+        {
+            DaySchedulerMode = false;
+            var startTimeSpan = TimeSpan.Zero;
+            var periodTimeSpan = TimeSpan.FromMilliseconds(500);
+
+            timer = new System.Threading.Timer(async (e) =>
+            {
+                await CheckRendering(true);
+            }, null, startTimeSpan, periodTimeSpan);
+        }
+        else
+        {
+            date = Convert.ToDateTime(Daydate);
+            CheckEmpty();
+            DaySchedulerMode = true;
+            var startTimeSpan = TimeSpan.Zero;
+            var periodTimeSpan = TimeSpan.FromMilliseconds(500);
+
+            timer = new System.Threading.Timer(async (e) =>
+            {
+                await CheckRendering(false);
+            }, null, startTimeSpan, periodTimeSpan);
+
+
+        }
+
+    }
+
+    /// <summary>
+    /// aproves the appointment and lets the user know his appointment has been approved
+    /// </summary>
+    /// <returns></returns>
+    async Task ApproveAppointment()
+    {
+        Console.WriteLine(CurrentAppointment);
+        AppointmentsModel data = new AppointmentsModel
+        {
+            Id = CurrentAppointment
+        };
+        ResponseModel response = await Http.PutJsonAsync<ResponseModel>("Appointments/Approve", data);
+
+        if (response.Status)
+        {
+            await GetAppointments();
+            if (ImidiateOptionActive)
+            {
+                CloseOpenModal();
+            }
+            closeEditMode();
+            string EmailBody = Lotus.Client.Properties.Resources.Email;
+
+
+            EmailBody = EmailBody.Replace("[Title]", "Your Booking has just been approved!");
+            EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+            EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that your booking is Approved and we hope to see you soon close to us.");
+            EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/4176dd05c2edc7ed1d4dcf1ad462bb36.png");
+            EmailBody = EmailBody.Replace("[Footer]", "Booking Recap:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+            EmailBody = EmailBody.Replace("[Date]", CurrentDate.ToString("dddd MMM dd, yyyy"));
+            EmailBody = EmailBody.Replace("[Time]", CurrentStartTime.ToString("hh:mm tt"));
+            EmailBody = EmailBody.Replace("[Type]", CurrType);
+            EmailBody = EmailBody.Replace("[Staff]", StaffDetails[0].Name + " " + StaffDetails[0].Surname);
+            EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+            EmailBody = EmailBody.Replace("[End]", settings[0].Company_Name);
+            var email = new EmailModel
+            {
+                Subject = "Your Booking has been Approved",
+                To = CurrentEmail,
+                Body = EmailBody,
+                HtmlBody = true
+            };
+
+            ResponseModel result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+
+        }
+    }
+    /// <summary>
+    /// sets the ending time of the appointment
+    /// </summary>
+    /// <returns></returns>
+    async Task SetEndTime()
+    {
+        CurrentStartTime = DateTime.ParseExact(await JSRuntime.InvokeAsync<string>("GetText", "StartTime"), "HH:mm", CultureInfo.InvariantCulture);
+        CurrentEndTime = CurrentStartTime.AddMinutes(CurrentDuration);
+    }
+    /// <summary>
+    /// opens the approval modal
+    /// </summary>
+    private void ApprovalOpen()
+    {
+        ApprovalMode = true;
+        CloseOpenModal();
+    }
+    /// <summary>
+    /// closes the approval modal
+    /// </summary>
+    private void CloseOpenModal()
+    {
+        if (AppointmentsModal)
+        {
+            AppointmentsModal = false;
+            EditMode = false;
+            ApprovalMode = false;
+            ImidiateOptionActive = false;
+        }
+        else
+        {
+            AppointmentsModal = true;
+        }
+    }
+    /// <summary>
+    /// opend the appointment to edit
+    /// </summary>
+    /// <param name="Id">id of appointment</param>
+    /// <param name="type">the type of the appointment</param>
+    /// <param name="duration">the duration of the appointment</param>
+    /// <param name="StartTime">start time  of the appointment</param>
+    /// <param name="EndTime">end time of the appointment</param>
+    /// <param name="date">date of the appointment</param>
+    /// <param name="MemberID">member id </param>
+    /// <param name="ImidiateOption">to see if u the option selection is stated</param>
+    /// <param name="day">the day of the appointment</param>
+    /// <returns></returns>
+    private async Task EditAppointment(int Id,string type, int duration, string StartTime, string EndTime, DateTime date, string MemberID, bool ImidiateOption, string day)
+    {
+        OldDate = date;
+        CurrentAppointment = Id;
+        CurrentDuration = duration;
+        CurrType = type;
+        CurrentStartTime = DateTime.ParseExact(StartTime, "HH:mm", CultureInfo.InvariantCulture);
+        OldStartTime = DateTime.ParseExact(StartTime, "HH:mm", CultureInfo.InvariantCulture);
+        CurrentEndTime = DateTime.ParseExact(EndTime, "HH:mm", CultureInfo.InvariantCulture);
+        CurrentDate = date;
+        MembersModel[] member = await Http.GetJsonAsync<MembersModel[]>($"Members/Get/{MemberID}");
+        CurrFullName = member[0].Name + " " + member[0].Surname;
+        CurrentEmail = member[0].Email;
+        CurrentPhone = member[0].Phone_Number;
+        CurrentNotes = member[0].Notes;
+        EditMode = true;
+        if (ImidiateOption)
+        {
+            ImidiateOptionActive = ImidiateOption;
+            selectedDate = day;
+            AppointmentsModal = true;
+        }
+
+
+    }
+    /// <summary>
+    /// close the edid modal
+    /// </summary>
+    private void closeEditMode()
+    {
+        EditMode = false;
+
+    }
+    /// <summary>
+    /// previous month
+    /// </summary>
+    /// <returns></returns>
+    async Task Previous()
+    {
+        ShowCurrMonth = false;
+        date = date.AddMonths(-1);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        await SetCalendar();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+    }
+    /// <summary>
+    /// chnages the calendar to the next month
+    /// </summary>
+    /// <returns></returns>
+    async Task Next()
+    {
+        ShowCurrMonth = false;
+        date = date.AddMonths(1);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        await SetCalendar();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+    }
+    /// <summary>
+    /// chnages day sceduler to display previous day
+    /// </summary>
+    /// <returns></returns>
+    async Task PreviousDay()
+    {
+        ShowCurrMonth = false;
+        date = date.AddDays(-1);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        await SetCalendar();
+        CheckEmpty();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickerday", date.ToString("dd MMMM yyyy"));
+
+
+    }
+    /// <summary>
+    /// changes the day scheduler to the next day
+    /// </summary>
+    /// <returns></returns>
+    async Task NextDay()
+    {
+        ShowCurrMonth = false;
+        date = date.AddDays(1);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        await SetCalendar();
+        CheckEmpty();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickerday", date.ToString("dd MMMM yyyy"));
+
+    }
+    /// <summary>
+    /// display the current day
+    /// </summary>
+    /// <param name="dayscheduler">used to display the scheduler current day or month</param>
+    /// <returns></returns>
+    async Task Today(bool dayscheduler)
+    {
+        ShowCurrMonth = true;
+        date = DateTime.Now;
+        await SetCalendar();
+        CheckEmpty();
+        if (!dayscheduler)
+        {
+            await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickerday", date.ToString("dd MMMM yyyy"));
+        }
+    }
+}

@@ -1,0 +1,1181 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.Reflection;
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+@using System.Globalization;
+
+@if (!isLoading)
+{
+    <div style="color:grey" class="row no-gutters">
+        <div class="col-md-12" style="text-align:center;">
+            <div class="row mt-1 no-gutters">
+                <div class="col-md-2 my-auto" style="text-align:left">
+                    <img class="rounded d-block ml-2" style="max-width:25vw;max-height:7vh;cursor:pointer" src="/StaticFiles/Logo.png" alt="Logo" @onclick="GoBack">
+                   
+                </div>
+                <div class="col-md-8">
+                    <h1 style="color:whitesmoke;" class="display-1 NonSelectable">@StepTitle[Step]</h1>
+                </div>
+                <div class="col-md-2">
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div class="row mt-1 no-gutters" style="min-height: 60vh;background:white;">
+        <div class="col-md-2 align-middle my-auto" style="text-align:center">
+            @if (Step != 6)
+            {
+                @if (Step == 0)
+                {
+                    <i style="color:grey;font-size:10rem" class="fas fa-chevron-left"></i>
+                }
+                else
+                {
+                    <i style="color:black; cursor:pointer;font-size:10rem" @onclick="PreviousStep" class="fas fa-chevron-left"></i>
+                }
+            }
+
+        </div>
+        
+        @if(Step == 6)
+        {
+
+        }
+        <div class="col-md-8 my-auto">
+            @if (Step == 0)
+            {
+                <div class="mt-5" style="height:45vh;overflow-y:auto;">
+                    <table class="tableMembers w-100" style="text-align:center;">
+                        <tbody>
+                            @foreach (var category in Categories)
+                            {
+                                if (Step0Selection == category.Id)
+                                {
+                                    <tr style="cursor:pointer;background-color:#707070;">
+                                        <td colspan="2" class="NonSelectable"><h3>@category.Name</h3></td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr @onclick="() => SelectCategory(category.Id, category.Name)" style="cursor:pointer;">
+                                        <td colspan="2" class="NonSelectable"><h3>@category.Name</h3></td>
+                                    </tr>
+                                }
+
+
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            }
+            @if (Step == 1)
+            {
+                <div class="mt-5 " style="height:45vh;overflow-y:auto;">
+                    <table class="tableMembers w-100" style="text-align:center">
+                        <tbody>
+                            @foreach (var service in Services)
+                            {
+                                string price = service.Price.ToString();
+                                if (price.Contains("."))
+                                {
+                                    if (price.Split(".")[1].Length == 1)
+                                    {
+                                        price += "0";
+                                    }
+                                }
+                                if (Step1Selection == service.Id.ToString())
+                                {
+                                    <tr style="cursor: pointer;background-color:#707070;">
+                                        <td class="NonSelectable"><h3>@service.Name</h3></td>
+                                        <td class="NonSelectable"><h3 class="rounded mt-1" style="background-color:whitesmoke;width:120px;">@Settings[0].Currency@price</h3></td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr style="cursor: pointer;" @onclick="() => SelectService(service.Name,service.Id,service.Duration, price)">
+                                        <td class="NonSelectable"><h3>@service.Name</h3></td>
+                                        <td class="NonSelectable"><h3 class="rounded mt-1" style="background-color:whitesmoke;width:120px;">@Settings[0].Currency@price</h3></td>
+                                    </tr>
+                                }
+
+
+
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Step == 2)
+            {
+                <Calendar_Booking onSelected="SelectDate" />
+            }
+            @if (Step == 3)
+            {
+                <div style="height:45vh;overflow-y:auto;" class="mt-5">
+                    <table class="tableMembers w-100">
+                        <tbody>
+                            @foreach (var staff in staffList)
+                            {
+                                string fullname = staff.Name + " " + staff.Surname;
+                                if (staff.Staff_Id == "Unavailable")
+                                {
+                                    <tr style="cursor:not-allowed;background-color:#eda4a4;">
+                                        <td class="NonSelectable"><img class="rounded-circle d-block NonSelectable" style="border:solid black 1px;width:80px;height:80px;margin:0 auto;cursor:pointer" src="/StaticFiles/Staff/@staff.Image" alt="@staff.Image"></td>
+                                        <td class="NonSelectable"><h3>@fullname</h3></td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    if (Step3Selection == staff.Staff_Id)
+                                    {
+                                        <tr style="cursor:pointer;background-color:#707070;">
+                                            <td class="NonSelectable"><img class="rounded-circle d-block NonSelectable" style="border:solid black 1px;width:80px;height:80px;margin:0 auto;cursor:pointer" src="/StaticFiles/Staff/@staff.Image" alt="@staff.Image"></td>
+                                            <td class="NonSelectable"><h3>@fullname</h3></td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        <tr style="cursor:pointer;" @onclick="() => SelectStaff(staff.Staff_Id,staff.Name,staff.Surname,staff.Email)">
+                                            <td class="NonSelectable"><img class="rounded-circle d-block NonSelectable" style="border:solid black 1px;width:80px;height:80px;margin:0 auto;cursor:pointer" src="/StaticFiles/Staff/@staff.Image" alt="@staff.Image"></td>
+                                            <td class="NonSelectable"><h3>@fullname</h3></td>
+                                        </tr>
+                                    }
+                                }
+
+
+
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            }
+            @if (Step == 4)
+            {
+                <table class="tableMembers w-100 mt-2" style="text-align:center;table-layout: fixed;">
+                    <thead>
+                        <tr>
+                            <th class="NonSelectable"><h3>Morning</h3></th>
+                            <th class="NonSelectable"><h3>Afternoon</h3></th>
+                            <th class="NonSelectable"><h3>Evening</h3></th>
+                        </tr>
+                    </thead>
+                </table>
+                <div style="height:43vh;overflow-y:auto;text-align:center;">
+                    <table class="tableMembers w-100" style="table-layout: fixed;">
+                        <tbody>
+                            @foreach (var time in BookingTimes)
+                            {
+
+                                <tr>
+                                    @if (time.MorningTime != "Filler")
+                                    {
+                                        @if (Step4Selection == time.MorningTime)
+                                        {
+                                            <td style="cursor:pointer;background-color:#707070" class="NonSelectable"><h5>@time.MorningTime</h5></td>
+                                        }
+                                        else
+                                        {
+                                            <td style="cursor:pointer;" class="NonSelectable" @onclick="() => SelectTime(time.MorningTime)"><h5>@time.MorningTime</h5></td>
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+                                    @if (time.AfternoonTime != "Filler")
+                                    {
+                                        @if (Step4Selection == time.AfternoonTime)
+                                        {
+                                            <td style="cursor:pointer;background-color:#707070" class="NonSelectable"><h5>@time.AfternoonTime</h5></td>
+                                        }
+                                        else
+                                        {
+                                            <td style="cursor:pointer;" class="NonSelectable" @onclick="() => SelectTime(time.AfternoonTime)"><h5>@time.AfternoonTime</h5></td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+                                    @if (time.EveningTime != "Filler")
+                                    {
+                                        @if (Step4Selection == time.EveningTime)
+                                        {
+                                            <td style="cursor:pointer;background-color:#707070" class="NonSelectable"><h5>@time.EveningTime</h5></td>
+                                        }
+                                        else
+                                        {
+                                            <td style="cursor:pointer;" class="NonSelectable" @onclick="() => SelectTime(time.EveningTime)"><h5>@time.EveningTime</h5></td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+
+                                </tr>
+
+
+
+
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Step == 5)
+            {
+                <div class="mt-5" style="height:50vh;overflow-y:auto;text-align:center;background-color:#d4d4d6;border: solid black thin;">
+                    <table class="w-100" style="text-align:left;background-color:#b8b8ba;">
+                        <tr>
+                            <td class="NonSelectable"><h5 class="ml-3 mt-2">@AppointmentType.Split("/")[0], @AppointmentType.Split("/")[1]</h5></td>
+                            <td class="NonSelectable"><span class="badge badge-pill badge-secondary">@AppointmentTime.ToString("hh:mm tt")</span></td>
+                        </tr>
+                        <tr>
+                            <td class="NonSelectable ml-3"><h5 class="ml-3">@AppointmentDate.ToString("dddd MMM dd, yyyy") <span class="badge badge-pill badge-secondary" style="font-size:12px;">In @InDays.ToString().Split(".")[0] Day(s)</span></h5></td>
+                            <td class="NonSelectable"><span class="badge badge-pill badge-secondary">@Settings[0].Currency@AppointmentPrice</span></td>
+                        </tr>
+                        <tr>
+                            <td class="NonSelectable ml-3"><h5 class="ml-3">@StaffFullName</h5></td>
+                            <td></td>
+                        </tr>
+
+                    </table>
+                    <button @onclick="Create_Appointment" class="btn btn-lg w-50 btn-success mt-3" style="margin:0 auto;">Submit</button>
+                </div>
+
+            }
+            @if (Step == 6)
+            {
+                <div  style="height:50vh;overflow-y:auto;text-align:center;background-color:#d4d4d6;border: solid black thin;">
+                    <table class="w-100" style="text-align:center;background-color:#d4d4d6;">
+                        <tr>
+                            <td colspan="2">
+                                @if (Settings[0].Require_Aproval)
+                                {
+                                    <i style="font-size:10rem;color:#ffc107;" class="fas fa-hourglass-half mt-5"></i>
+                                }
+                                else
+                                {
+                                    <i style="font-size:10rem;color:forestgreen" class="fas fa-check-circle mt-5"></i>
+                                }
+                            </td>
+                        </tr>
+                        <tr class="mt-2">
+                            <td colspan="2" class="NonSelectable"><h2>Thank You for your Booking</h2></td>
+                        </tr>
+                        <tr>
+                            @if (Settings[0].Require_Aproval)
+                            {
+                                <td colspan="2" class="NonSelectable ml-3"><h3>Please wait for a member of staff to Approve your booking</h3></td>
+
+                            }
+                            else
+                            {
+                                <td colspan="2" class="NonSelectable ml-3"><h3>Your Booking is confirmed</h3></td>
+                            }
+
+                        </tr>
+                        <tr>
+                            <td style="text-align:right;">
+                                <button class="btn btn-success mt-1" style="color:black;" @onclick="NewBooking">Make A New Booking</button>
+                            </td>
+                            <td style="text-align:left;">
+                                <button class="btn btn-warning mt-1" @onclick="GoBack">View Your Bookings</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            }
+            @if (Step != 2 && Step != 5 && Step != 6)
+            {
+                <table class="mb-2 mt-2 w-100" style="text-align:center;">
+                    <tr>
+
+                        <td colspan="2">
+                            @if (NextDisabled)
+                            {
+                                <button disabled class="btn btn-lg w-50 btn-success">Continue</button>
+                            }
+                            else
+                            {
+                                <button @onclick="Continue" class="btn btn-lg w-50 btn-success">Continue</button>
+                            }
+
+                        </td>
+                    </tr>
+                </table>
+            }
+
+        </div>
+        <div class="col-md-2 my-auto" style="text-align:center">
+            @if (Step != 6)
+            {
+                @if (Step == 5)
+                {
+                    <i style="color:grey;font-size:10rem" class="fas fa-chevron-right"></i>
+                }
+                else
+                {
+                    if (NextDisabled)
+                    {
+                        <i style="color:grey;font-size:10rem" class="fas fa-chevron-right"></i>
+                    }
+                    else
+                    {
+                        <i style="color:black; cursor:pointer;font-size:10rem" @onclick="Continue" class="fas fa-chevron-right"></i>
+                    }
+
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public EventCallback<string> ChangeWindow { get; set; }
+    [Parameter] public string MemberId { get; set; }
+    [Parameter] public string MemberEmail { get; set; }
+    List<string> StepTitle = new List<string> { "Categories", "Services", "Calendar", "Staff", "Time Slots", "Review Summary", "Booking Information" };
+    string MemberFullName = "";
+    string StaffEmail = "";
+    int Step, Duration = 0;
+    double InDays = 0;
+    bool BookingFinished = false;
+    bool NextDisabled = true;
+    string Step0Selection, Step1Selection, Step3Selection, Step4Selection = "none";
+    string AppointmentType, CategoryId, StaffId, StaffFullName, BookingDate, BookingDay, CurrentTime, AppointmentPrice = "";
+    DateTime AppointmentTime;
+    DateTime AppointmentDate;
+    DateTime DateNow = DateTime.Now;
+    CategoriesModel[] Categories;
+    ServiceModel[] Services;
+    SettingsModel[] Settings;
+    StaffAssignmentModel[] Privillages;
+    StaffModel[] Staff;
+    MembersModel[] Member;
+    List<TimeSlotsModel> BookingTimes = new List<TimeSlotsModel>();
+    List<DateTime> TimeSlots = new List<DateTime>();
+    AppointmentsModel[] appointments;
+    List<string> PrivillagesList = new List<string>();
+    List<StaffModel> staffList = new List<StaffModel>();
+    string[] Days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    bool isLoading = true;
+    /// <summary>
+    /// resets everything to make a new booking
+    /// </summary>
+    private void NewBooking()
+    {
+        DateNow = DateTime.Now;
+        Step0Selection = "";
+        Step1Selection = "";
+        Step3Selection = "";
+        Step4Selection = "";
+        NextDisabled = true;
+        BookingFinished = false;
+        Step = 0;
+
+    }
+    /// <summary>
+    /// changes the window to display all the members appointments
+    /// </summary>
+    protected void GoBack()
+    {
+        ChangeWindow.InvokeAsync("All");
+    }
+    /// <summary>
+    /// when the page is being initialized the member information is pulles and the full name is set also the categories and settings are pulled
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        Member = await Http.GetJsonAsync<MembersModel[]>($"Members/Get/{MemberId}");
+        MemberFullName = Member[0].Name + " " + Member[0].Surname;
+        Categories = await Http.GetJsonAsync<CategoriesModel[]>("Categories");
+        Settings = await Http.GetJsonAsync<SettingsModel[]>("Settings");
+        isLoading = false;
+    }
+    /// <summary>
+    /// selects the time the user wants to book the appointment
+    /// </summary>
+    /// <param name="Time">time send as string</param>
+    private void SelectTime(string Time)
+    {
+        Step4Selection = Time;
+        AppointmentTime = DateTime.ParseExact(Time, "hh:mm tt", CultureInfo.InvariantCulture);
+        NextDisabled = false;
+    }
+    /// <summary>
+    /// selects the date to book the appointments loads all staff available at that day non available are identified by a red background color letting the user know they cant book with this person
+    /// </summary>
+    /// <param name="date"></param>
+    /// <returns></returns>
+    async Task SelectDate(string date)
+    {
+        staffList.Clear();
+        BookingDate = date;
+        DateTime dateValue = DateTime.ParseExact(date, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+        AppointmentDate = dateValue;
+        InDays = (dateValue - DateNow).TotalDays;
+        string SearchDate = date.Split("/")[2] + "-" + date.Split("/")[1] + "-" + date.Split("/")[0];
+        foreach (var staff in Staff)
+        {
+            string HoursAvailable = "";
+            if (PrivillagesList.Contains(staff.Staff_Id))
+            {
+
+                WorkingHoursModel[] WorkingHours = await Http.GetJsonAsync<WorkingHoursModel[]>($"WorkingHours/{staff.Staff_Id}");
+                int Day = Array.IndexOf(Days, dateValue.DayOfWeek.ToString());
+                bool Available = true;
+                switch (Day)
+                {
+                    case 0:
+                        HoursAvailable = WorkingHours[0].MondayHours;
+                        if (WorkingHours[0].MondayClosed)
+                        {
+
+                            Available = false;
+                        }
+                        break;
+                    case 1:
+                        HoursAvailable = WorkingHours[0].TuesdayHours;
+                        if (WorkingHours[0].TuesdayClosed)
+                        {
+
+                            Available = false;
+                        }
+                        break;
+                    case 2:
+                        HoursAvailable = WorkingHours[0].WednesdayHours;
+                        if (WorkingHours[0].WednesdayClosed)
+                        {
+                            Available = false;
+                        }
+                        break;
+                    case 3:
+                        HoursAvailable = WorkingHours[0].ThursdayHours;
+                        if (WorkingHours[0].ThursdayClosed)
+                        {
+                            Available = false;
+                        }
+                        break;
+                    case 4:
+                        HoursAvailable = WorkingHours[0].FridayHours;
+                        if (WorkingHours[0].FridayClosed)
+                        {
+                            Available = false;
+                        }
+                        break;
+                    case 5:
+                        HoursAvailable = WorkingHours[0].SaturdayHours;
+                        if (WorkingHours[0].SaturdayClosed)
+                        {
+                            Available = false;
+                        }
+                        break;
+                    case 6:
+                        HoursAvailable = WorkingHours[0].SundayHours;
+                        if (WorkingHours[0].SundayClosed)
+                        {
+                            Available = false;
+                        }
+                        break;
+                }
+
+                if (Available)
+                {
+
+                    appointments = await Http.GetJsonAsync<AppointmentsModel[]>($"Appointments/GetByDate/{SearchDate}/{staff.Staff_Id}");
+                    if (CheckAvailableHours(HoursAvailable))
+                    {
+                        staffList.Add(new StaffModel
+                        {
+                            Staff_Id = staff.Staff_Id,
+                            Name = staff.Name,
+                            Surname = staff.Surname,
+                            Image = staff.Image
+                        });
+                    }
+                    else
+                    {
+                        staffList.Add(new StaffModel
+                        {
+                            Staff_Id = "Unavailable",
+                            Name = staff.Name,
+                            Surname = staff.Surname,
+                            Image = staff.Image
+                        });
+                    }
+
+                }
+                else
+                {
+                    staffList.Add(new StaffModel
+                    {
+                        Staff_Id = "Unavailable",
+                        Name = staff.Name,
+                        Surname = staff.Surname,
+                        Image = staff.Image
+                    });
+                }
+            }
+        }
+        NextStep();
+    }
+    /// <summary>
+    /// gets the available time slots of the selected staff member
+    /// </summary>
+    /// <returns></returns>
+    private async Task GetTimeslots()
+    {
+        TimeSlots.Clear();
+
+        DateTime dateValue = DateTime.ParseExact(BookingDate, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+        string SearchDate = BookingDate.Split("/")[2] + "-" + BookingDate.Split("/")[1] + "-" + BookingDate.Split("/")[0];
+        appointments = await Http.GetJsonAsync<AppointmentsModel[]>($"Appointments/GetByDate/{SearchDate}/{StaffId}");
+        WorkingHoursModel[] WorkingHours = await Http.GetJsonAsync<WorkingHoursModel[]>($"WorkingHours/{StaffId}");
+        int Day = Array.IndexOf(Days, dateValue.DayOfWeek.ToString());
+        string HoursAvailable = "";
+        switch (Day)
+        {
+            case 0:
+                HoursAvailable = WorkingHours[0].MondayHours;
+                break;
+            case 1:
+                HoursAvailable = WorkingHours[0].TuesdayHours;
+                break;
+            case 2:
+                HoursAvailable = WorkingHours[0].WednesdayHours;
+                break;
+            case 3:
+                HoursAvailable = WorkingHours[0].ThursdayHours;
+                break;
+            case 4:
+                HoursAvailable = WorkingHours[0].FridayHours;
+                break;
+            case 5:
+                HoursAvailable = WorkingHours[0].SaturdayHours;
+                break;
+            case 6:
+                HoursAvailable = WorkingHours[0].SundayHours;
+                break;
+        }
+
+        string StartingHour = "";
+        if (HoursAvailable.Split("-")[0].Length == 1)
+        {
+            StartingHour = "0" + HoursAvailable.Split("-")[0] + ":00";
+        }
+        else
+        {
+            StartingHour = HoursAvailable.Split("-")[0] + ":00";
+        }
+
+        string EndingHour = "";
+        if (HoursAvailable.Split("-")[1].Length == 1)
+        {
+            EndingHour = "0" + HoursAvailable.Split("-")[1] + ":00";
+        }
+        else
+        {
+            EndingHour = HoursAvailable.Split("-")[1] + ":00";
+        }
+        DateTime StartTime = DateTime.ParseExact(StartingHour, "HH:mm", CultureInfo.InvariantCulture);
+        DateTime FinalAppTime = DateTime.ParseExact(EndingHour, "HH:mm", CultureInfo.InvariantCulture);
+        FinalAppTime = FinalAppTime.AddMinutes(-Duration);
+        if (appointments.Count() == 0)
+        {
+            if (BookingDate != DateNow.ToString("dd/MM/yyyy"))
+            {
+                while (StartTime <= FinalAppTime)
+                {
+                    DateTime EndTime = StartTime.AddMinutes(Duration);
+                    TimeSlots.Add(StartTime);
+                    StartTime = EndTime;
+                }
+            }
+            else
+            {
+                int CurrentTime = Convert.ToInt32(DateTime.Now.ToString("HHmm"));
+                int StaffStartTime = Convert.ToInt32(StartTime.ToString("HHmm"));
+
+                if (CurrentTime >= StaffStartTime)
+                {
+                    DateTime StartTimeNow = DateTime.ParseExact(DateTime.Now.ToString("HH") + ":00", "HH:mm", CultureInfo.InvariantCulture);
+                    while (StartTimeNow <= FinalAppTime)
+                    {
+                        DateTime EndTime = StartTime.AddMinutes(Duration);
+                        TimeSlots.Add(StartTime);
+                        StartTime = EndTime;
+                    }
+                }
+            }
+
+        }
+        else
+        {
+            if (BookingDate != DateNow.ToString("dd/MM/yyyy"))
+            {
+                while (StartTime <= FinalAppTime)
+                {
+                    bool Available = true;
+                    DateTime EndTime = StartTime.AddMinutes(Duration);
+                    foreach (var app in appointments)
+                    {
+
+                        DateTime appStart = DateTime.ParseExact(app.Start, "HH:mm", CultureInfo.InvariantCulture);
+                        DateTime appEnd = DateTime.ParseExact(app.End, "HH:mm", CultureInfo.InvariantCulture);
+
+
+                        if (StartTime.ToString("HH:mm") == app.Start && EndTime.ToString("HH:mm") == app.End)
+                        {
+                            Available = false;
+                        }
+                        else if (StartTime.ToString("HH:mm") == app.Start)
+                        {
+                            Available = false;
+                        }
+                        else if (EndTime.ToString("HH:mm") == app.End)
+                        {
+                            Available = false;
+                        }
+                        else if (StartTime > appStart && EndTime < appEnd)
+                        {
+                            Available = false;
+                        }
+                        else if (EndTime > appStart && EndTime < appEnd)
+                        {
+                            Available = false;
+                        }
+
+                    }
+                    if (Available)
+                    {
+                        TimeSlots.Add(StartTime);
+                    }
+                    StartTime = EndTime;
+                }
+            }
+            else
+            {
+                int CurrentTime = Convert.ToInt32(DateTime.Now.ToString("HHmm"));
+                int StaffStartTime = Convert.ToInt32(StartTime.ToString("HHmm"));
+
+                if (CurrentTime >= StaffStartTime)
+                {
+                    DateTime StartTimeNow = DateTime.ParseExact(DateTime.Now.ToString("HH") + ":00", "HH:mm", CultureInfo.InvariantCulture);
+
+                    while (StartTimeNow <= FinalAppTime)
+                    {
+                        bool Available = true;
+                        DateTime EndTime = StartTime.AddMinutes(Duration);
+                        foreach (var app in appointments)
+                        {
+
+                            DateTime appStart = DateTime.ParseExact(app.Start, "HH:mm", CultureInfo.InvariantCulture);
+                            DateTime appEnd = DateTime.ParseExact(app.End, "HH:mm", CultureInfo.InvariantCulture);
+
+
+                            if (StartTime.ToString("HH:mm") == app.Start && EndTime.ToString("HH:mm") == app.End)
+                            {
+                                Available = false;
+                            }
+                            else if (StartTime.ToString("HH:mm") == app.Start)
+                            {
+                                Available = false;
+                            }
+                            else if (EndTime.ToString("HH:mm") == app.End)
+                            {
+                                Available = false;
+                            }
+                            else if (StartTime > appStart && EndTime < appEnd)
+                            {
+                                Available = false;
+                            }
+                            else if (EndTime > appStart && EndTime < appEnd)
+                            {
+                                Available = false;
+                            }
+
+                        }
+                        if (Available)
+                        {
+                            TimeSlots.Add(StartTime);
+                        }
+                        StartTime = EndTime;
+                    }
+                }
+            }
+
+        }
+    }
+    /// <summary>
+    /// formats the times and splits the in an object arrow to load them in a table format
+    /// </summary>
+    private void Initialize_TimeSlots()
+    {
+
+        BookingTimes.Clear();
+        int maxListSize = 0;
+        DateTime MorningLimit = DateTime.ParseExact("12:00", "HH:mm", CultureInfo.InvariantCulture);
+        DateTime AfternoonLimit = DateTime.ParseExact("17:00", "HH:mm", CultureInfo.InvariantCulture);
+        List<string> MorningTimes = new List<string>();
+        List<string> AfternoonTimes = new List<string>();
+        List<string> EveningTimes = new List<string>();
+        foreach (var time in TimeSlots)
+        {
+            if (time < MorningLimit)
+            {
+                MorningTimes.Add(time.ToString("hh:mm tt"));
+            }
+            else if (time >= MorningLimit && time < AfternoonLimit)
+            {
+                AfternoonTimes.Add(time.ToString("hh:mm tt"));
+            }
+            else
+            {
+                EveningTimes.Add(time.ToString("hh:mm tt"));
+            }
+        }
+        if (MorningTimes.Count() > maxListSize)
+        {
+            maxListSize = MorningTimes.Count();
+        }
+
+        if (AfternoonTimes.Count() > maxListSize)
+        {
+            maxListSize = AfternoonTimes.Count();
+        }
+
+        if (EveningTimes.Count() > maxListSize)
+        {
+            maxListSize = EveningTimes.Count();
+        }
+
+        if (MorningTimes.Count() < maxListSize)
+        {
+            for (int i = maxListSize - MorningTimes.Count(); i > 0; i--)
+            {
+                MorningTimes.Add("Filler");
+            }
+        }
+
+        if (AfternoonTimes.Count() < maxListSize)
+        {
+            for (int i = maxListSize - AfternoonTimes.Count(); i > 0; i--)
+            {
+                AfternoonTimes.Add("Filler");
+            }
+        }
+
+        if (EveningTimes.Count() < maxListSize)
+        {
+            for (int i = maxListSize - EveningTimes.Count(); i > 0; i--)
+            {
+                EveningTimes.Add("Filler");
+            }
+        }
+        for (int i = 0; i < maxListSize; i++)
+        {
+            Console.WriteLine(MorningTimes[i] + " " + AfternoonTimes[i] + " " + EveningTimes[i]);
+            BookingTimes.Add(new TimeSlotsModel
+            {
+                MorningTime = MorningTimes[i],
+                AfternoonTime = AfternoonTimes[i],
+                EveningTime = EveningTimes[i]
+            });
+        }
+    }
+    /// <summary>
+    /// checks to see if the customer is available at that hour
+    /// </summary>
+    /// <param name="hours">the times to check in string format</param>
+    /// <returns></returns>
+    private bool CheckAvailableHours(string hours)
+    {
+        int counter = 0;
+
+        bool Available = true;
+        Console.WriteLine(counter.ToString());
+        foreach (var app in appointments)
+        {
+            counter++;
+        }
+
+        if (counter == 0)
+        {
+
+            return true;
+        }
+        else
+        {
+            string StartingHour = "";
+            if (hours.Split("-")[0].Length == 1)
+            {
+                StartingHour = "0" + hours.Split("-")[0] + ":00";
+            }
+            else
+            {
+                StartingHour = hours.Split("-")[0] + ":00";
+            }
+            DateTime StartTime = DateTime.ParseExact(StartingHour, "HH:mm", CultureInfo.InvariantCulture);
+            foreach (var app in appointments)
+            {
+                Available = true;
+                DateTime appStart = DateTime.ParseExact(app.Start, "HH:mm", CultureInfo.InvariantCulture);
+                DateTime appEnd = DateTime.ParseExact(app.End, "HH:mm", CultureInfo.InvariantCulture);
+                DateTime EndTime = StartTime.AddMinutes(Duration);
+
+                if (StartTime.ToString("HH:mm") == app.Start && EndTime.ToString("HH:mm") == app.End)
+                {
+                    Available = false;
+                }
+                else if (StartTime.ToString("HH:mm") == app.Start)
+                {
+                    Available = false;
+                }
+                else if (EndTime.ToString("HH:mm") == app.End)
+                {
+                    Available = false;
+                }
+                else if (StartTime > appStart && EndTime < appEnd)
+                {
+                    Available = false;
+                }
+                else if (EndTime > appStart && EndTime < appEnd)
+                {
+                    Available = false;
+                }
+
+                if (Available)
+                {
+                    return true;
+                }
+                StartTime = EndTime;
+
+            }
+        }
+
+        return Available;
+    }
+    /// <summary>
+    /// selects the category
+    /// </summary>
+    /// <param name="Id">stores the id</param>
+    /// <param name="Name">stores the name of the category</param>
+    private void SelectCategory(string Id, string Name)
+    {
+        Step0Selection = Id;
+        CategoryId = Id;
+        AppointmentType = Name;
+        NextDisabled = false;
+
+    }
+    /// <summary>
+    /// check to see if its okay to book the appointment at that time used for extra validation
+    /// </summary>
+    /// <returns>true or false</returns>
+    private bool CheckAvailability()
+    {
+        bool Acceptance = true;
+        DateTime CurrentStartTime = AppointmentTime;
+        DateTime CurrentEndTime = AppointmentTime.AddMinutes(Duration);
+
+        foreach (var app in appointments)
+        {
+            DateTime tempStart = DateTime.ParseExact(app.Start, "HH:mm", CultureInfo.InvariantCulture);
+            DateTime tempEnd = DateTime.ParseExact(app.End, "HH:mm", CultureInfo.InvariantCulture);
+
+            if (app.Start == CurrentStartTime.ToString("HH:mm") && app.End == CurrentEndTime.ToString("HH:mm"))
+            {
+                Acceptance = false;
+            }
+            else if (CurrentStartTime.ToString("HH:mm") == app.Start)
+            {
+                Acceptance = false;
+            }
+            else if (CurrentEndTime.ToString("HH:mm") == app.End)
+            {
+                Acceptance = false;
+            }
+            else if (CurrentStartTime > tempStart && CurrentStartTime < tempEnd)
+            {
+                Acceptance = false;
+            }
+            else if (CurrentEndTime > tempStart && CurrentEndTime < tempEnd)
+            {
+                Acceptance = false;
+            }
+        }
+
+        return Acceptance;
+    }
+    /// <summary>
+    /// creates the appointment and goes to the final screen whilst also sending all the appropriate emails
+    /// </summary>
+    /// <returns></returns>
+    private async Task Create_Appointment()
+    {
+        string CurrentStatus = "Confirmed";
+        bool Acceptance = CheckAvailability();
+        DateTime CurrentStartTime = AppointmentTime;
+        DateTime CurrentEndTime = AppointmentTime.AddMinutes(Duration);
+        if (Settings[0].Require_Aproval)
+        {
+            CurrentStatus = "Waiting";
+        }
+
+        if (Acceptance)
+        {
+            var data = new AppointmentsModel
+            {
+                Full_Name = MemberFullName,
+                Type = AppointmentType,
+                Staff_Id = StaffId,
+                Member_Id = MemberId,
+                Start = CurrentStartTime.ToString("HH:mm"),
+                End = CurrentEndTime.ToString("HH:mm"),
+                Duration = Duration,
+                Status = CurrentStatus,
+                App_Date = AppointmentDate
+
+            };
+
+            ResponseModel response = await Http.PostJsonAsync<ResponseModel>("Appointments", data);
+
+
+            if (response.Status)
+            {
+                NextStep();
+                await SendEmail(CurrentStatus, response.Message);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Reject");
+        }
+    }
+    /// <summary>
+    /// sends the appropriate emails to the correct people hence staff and member
+    /// </summary>
+    /// <param name="status">the status of the appointment</param>
+    /// <param name="AppointmentID">the if of the appointment</param>
+    /// <returns></returns>
+    private async Task SendEmail(string status, string AppointmentID)
+    {
+        string EmailBody = Lotus.Client.Properties.Resources.Email;
+        string EmailBodyStaff = Lotus.Client.Properties.Resources.Email;
+        if (status == "Confirmed")
+        {
+
+            EmailBody = EmailBody.Replace("[Title]", "Your Booking is Made And Confirmed");
+            EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+            EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that your booking is confirmed and we hope to see you soon close to us.");
+
+            EmailBodyStaff = EmailBodyStaff.Replace("[Title]", "New Booking");
+            EmailBodyStaff = EmailBodyStaff.Replace("[Header]", "Hope this email finds you well!");
+            EmailBodyStaff = EmailBodyStaff.Replace("[Message]", "This Email is sent to you to let you know that you have a new booking.");
+            EmailBodyStaff = EmailBodyStaff.Replace("[Footer]", "Booking Information:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type]");
+
+        }
+        else
+        {
+            EmailBody = EmailBody.Replace("[Title]", "Your Booking is Made and Awaiting Confirmation");
+            EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+            EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that a member of staff will review your appointment and you should hear back from us shortly");
+
+            EmailBodyStaff = EmailBodyStaff.Replace("[Title]", "New Booking");
+            EmailBodyStaff = EmailBodyStaff.Replace("[Header]", "Hope this email finds you well!");
+            EmailBodyStaff = EmailBodyStaff.Replace("[Message]", "This Email is sent to you to let you know that you have a new booking, you can use the link at the end of the Booking Information to Aprove or Reject it.");
+            EmailBodyStaff = EmailBodyStaff.Replace("[Footer]", "Booking Information:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type] <br/><br/> [Link]");
+        }
+
+        EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/4176dd05c2edc7ed1d4dcf1ad462bb36.png");
+        EmailBody = EmailBody.Replace("[Footer]", "Booking Recap:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+        EmailBody = EmailBody.Replace("[Date]", AppointmentDate.ToString("dddd MMM dd, yyyy"));
+        EmailBody = EmailBody.Replace("[Time]", AppointmentTime.ToString("hh:mm tt"));
+        EmailBody = EmailBody.Replace("[Type]", AppointmentType);
+        EmailBody = EmailBody.Replace("[Staff]", StaffFullName);
+        EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+        EmailBody = EmailBody.Replace("[End]", Settings[0].Company_Name);
+
+        EmailBodyStaff = EmailBodyStaff.Replace("[Image]", "https://i.gyazo.com/4176dd05c2edc7ed1d4dcf1ad462bb36.png");
+        EmailBodyStaff = EmailBodyStaff.Replace("[Date]", AppointmentDate.ToString("dddd MMM dd, yyyy"));
+        EmailBodyStaff = EmailBodyStaff.Replace("[Time]", AppointmentTime.ToString("hh:mm tt"));
+        EmailBodyStaff = EmailBodyStaff.Replace("[Type]", AppointmentType);
+        EmailBodyStaff = EmailBodyStaff.Replace("[Link]", "<a href='[href]'>Click to Approve or Reject Booking</a>");
+        EmailBodyStaff = EmailBodyStaff.Replace("[href]", NavigationManager.BaseUri + "BookingReview?i=" + AppointmentID + "&n=" + StaffFullName.Replace(" ", "%20"));
+        EmailBodyStaff = EmailBodyStaff.Replace("[ClosingRemarks]", "Cheers,");
+        EmailBodyStaff = EmailBodyStaff.Replace("[End]", Settings[0].Company_Name);
+        var email = new EmailModel
+        {
+            Subject = "About your booking",
+            To = MemberEmail,
+            Body = EmailBody,
+            HtmlBody = true
+        };
+
+        ResponseModel result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+
+        email = new EmailModel
+        {
+            Subject = "About your NEW booking",
+            To = StaffEmail,
+            Body = EmailBodyStaff,
+            HtmlBody = true
+        };
+
+        result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+    }
+    /// <summary>
+    /// selects the service
+    /// </summary>
+    /// <param name="Name">name of the service in string</param>
+    /// <param name="ID">if of the service in int</param>
+    /// <param name="minutes">the duration of the service</param>
+    /// <param name="price">the price of the service</param>
+    private void SelectService(string Name, int ID, int minutes, string price)
+    {
+        Duration = minutes;
+        AppointmentPrice = price;
+        Step1Selection = ID.ToString();
+        if (AppointmentType.Contains("/"))
+        {
+            AppointmentType = AppointmentType.Split("/")[0] + "/" + Name;
+        }
+        else
+        {
+            AppointmentType += "/" + Name;
+        }
+
+        NextDisabled = false;
+    }
+    /// <summary>
+    /// selects the staff member
+    /// </summary>
+    /// <param name="ID">id of the staff</param>
+    /// <param name="Name">name of the staff</param>
+    /// <param name="Surname">surname of the staff</param>
+    /// <param name="email">email of the staff</param>
+    private void SelectStaff(string ID, string Name, string Surname, string email)
+    {
+        StaffEmail = email;
+        Step3Selection = ID;
+        StaffId = ID;
+        StaffFullName = Name + " " + Surname;
+        NextDisabled = false;
+    }
+    /// <summary>
+    /// goes to the nect step
+    /// </summary>
+    /// <returns></returns>
+    private async Task Continue()
+    {
+        if (Step == 0)
+        {
+            Services = await Http.GetJsonAsync<ServiceModel[]>($"Service/{CategoryId}");
+            NextStep();
+        }
+        else if (Step == 1)
+        {
+            PrivillagesList.Clear();
+            Privillages = await Http.GetJsonAsync<StaffAssignmentModel[]>($"StaffAssignment/GetByCategoryId/{CategoryId}");
+            foreach (var Privilage in Privillages)
+            {
+                Console.WriteLine(Privilage.Staff_Id);
+                PrivillagesList.Add(Privilage.Staff_Id);
+            }
+            Staff = await Http.GetJsonAsync<StaffModel[]>("Staff");
+            NextStep();
+        }
+        else if (Step == 2)
+        {
+
+            NextStep();
+        }
+        else if (Step == 3)
+        {
+            await GetTimeslots();
+            Initialize_TimeSlots();
+
+            NextStep();
+            Console.WriteLine(Step);
+        }
+        else if (Step == 4)
+        {
+            NextStep();
+        }
+    }
+    /// <summary>
+    /// changes to the next step
+    /// </summary>
+    private void NextStep()
+    {
+        if ((Step + 1) < 7)
+        {
+            Step++;
+            NextDisabled = true;
+            switch (Step)
+            {
+                case 1:
+                    if (Step1Selection != "")
+                    {
+                        NextDisabled = false;
+                    }
+                    break;
+                case 2:
+                    if (AppointmentType.Contains("/"))
+                    {
+                        NextDisabled = false;
+                    }
+                    break;
+                case 3:
+                    if (Step3Selection != "")
+                    {
+                        NextDisabled = false;
+                    }
+                    break;
+                case 4:
+                    if (Step4Selection != "")
+                    {
+                        NextDisabled = false;
+                    }
+                    break;
+
+            }
+            if (Step == 1)
+            {
+                if (Step1Selection != "")
+                {
+                    NextDisabled = false;
+                }
+            }
+
+
+        }
+    }
+    /// <summary>
+    /// goes to the previous step
+    /// </summary>
+    private void PreviousStep()
+    {
+        if ((Step - 1) > -1)
+        {
+
+            Step--;
+        }
+        NextDisabled = false;
+    }
+
+}

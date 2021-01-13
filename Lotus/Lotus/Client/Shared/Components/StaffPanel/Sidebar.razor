@@ -1,0 +1,158 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using Lotus.Shared
+<div class="row no-gutters justify-content-center" style="text-align:center;">
+    <div style="margin-top:2rem !important;text-align:center;">
+        @if (SelectedOption == "Members")
+        {
+            <i class="fas fa-portrait fa-fw" style=" opacity:1; font-size: 3.5rem; cursor: pointer" id="MembersOptionSelected" />
+        }
+        else
+        {
+            <i class="fas fa-portrait fa-fw " style="font-size: 3.5rem;cursor: pointer" id="MembersOption" @onclick='(() => SelectOption("Members"))' />
+        }
+        <h6 class="NonSelectable" style="cursor:pointer">Members</h6>
+    </div>
+</div>
+<div class="row no-gutters justify-content-center" style="text-align:center;">
+    <div style="margin-top:2rem !important;text-align:center;">
+        @if (SelectedOption == "Calendar")
+        {
+            <i class="fas fa-calendar-alt" style=" opacity:1; font-size: 3.5rem; cursor: pointer" id="CalendarOptionSelected" />
+        }
+        else
+        {
+            <i class="fas fa-calendar-alt" style="font-size: 3.5rem;cursor: pointer" id="CalendarOption" @onclick='(() => SelectOption("Calendar"))' />
+        }
+        <h6 class="NonSelectable" style="cursor:pointer">Calendar</h6>
+    </div>
+</div>
+<div class="row no-gutters justify-content-center" style="text-align:center;">
+    <div style="margin-top:2rem !important">
+        @if (SelectedOption == "Settings")
+        {
+            <i class="fas fa-cogs fa-fw" style=" opacity:1; font-size: 3.5rem; cursor: pointer" id="SettingsOptionSelected" />
+        }
+        else
+        {
+            <i class="fas fa-cogs fa-fw " style=" font-size: 3.5rem; cursor: pointer" id="SettingsOption" @onclick='(() => SelectOption("Settings"))' />
+        }
+        <h6 class="NonSelectable" style="cursor:pointer">Settings</h6>
+    </div>
+</div>
+
+<div class="row no-gutters justify-content-center" style="text-align:center;">
+
+    <div style="margin-top:18rem !important">
+        @if (SelectedOption == "About")
+        {
+            <img class="NonSelectable" src="/StaticFiles/TeamLogo.png" alt="Black Lotus Logo" style=" opacity:1; height:80px;width:90px; cursor: pointer" id="AboutOptionSelected" />
+
+        }
+        else
+        {
+            <img class="NonSelectable" src="/StaticFiles/TeamLogo.png" style=" height:80px;width:90px; cursor: pointer" id="AboutOption" @onclick='(() => SelectOption("About"))' />
+
+        }
+        <h6 class="NonSelectable" style="cursor:pointer">About Us</h6>
+    </div>
+
+</div>
+<div class="row no-gutters justify-content-center" style="text-align:center;">
+
+    <div style="margin-top:2rem !important">
+        @if (SelectedOption == "Logout")
+        {
+            <i class="fas fa-cogs fa-sign-out-alt" style=" opacity:1; font-size: 3.5rem; cursor: pointer" id="LogoutOptionSelected" />
+        }
+        else
+        {
+            <i class="fas fa-cogs fa-sign-out-alt " style=" font-size: 3.5rem; cursor: pointer" id="LogoutOption" @onclick='(() => SelectOption("Logout"))' />
+        }
+        <h6 class="NonSelectable" style="cursor:pointer">Logout</h6>
+    </div>
+
+</div>
+
+@if (ConfirmationShow)
+{
+    <div class="modal fade show" id="myModal" style="display:block;vertical-align: middle; " aria-modal="true" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title NonSelectable">Confirmation</h5>
+                    <button type="button" style="outline:none" class="close NonSelectable" @onclick="CloseConfirmation" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="NonSelectable">Please keep in mind by doing this next time you will need to re-enter your email and password.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseConfirmation">No</button>
+                    <button type="button" class="btn btn-success" @onclick="ConfirmLogout">Yes</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+   
+
+
+}
+
+
+@code{
+
+    private String SelectedOption = "none";
+    private List<string> Parameters = new List<string>();
+    private bool ConfirmationShow = false;
+    [Parameter] public EventCallback<List<string>> onSelected { get; set; }
+    protected override void OnInitialized()
+    {
+    }
+    /// <summary>
+    /// changes the component to the feature selected on the sidebar
+    /// </summary>
+    /// <param name="Option">the page to chnage to in string</param>
+    void SelectOption(string Option)
+    {
+        if (Option == "Logout")
+        {
+            ConfirmationShow = true;
+        }
+        else
+        {
+            if (Option == "Members")
+            {
+                Parameters.Clear();
+                Parameters.Add("Members");
+                Parameters.Add("Please select a member from the list on the left hand side");
+                onSelected.InvokeAsync(Parameters);
+            }
+            else
+            {
+                Parameters.Clear();
+                Parameters.Add(Option);
+                onSelected.InvokeAsync(Parameters);
+            }
+            SelectedOption = Option;
+        }
+    }
+    /// <summary>
+    /// closes the modal when loggin out message appearing
+    /// </summary>
+    void CloseConfirmation()
+    {
+        ConfirmationShow = false;
+    }
+    /// <summary>
+    /// logs out the user
+    /// </summary>
+    void ConfirmLogout()
+    {
+        CloseConfirmation();
+        NavigationManager.NavigateTo(uri: "/logout");
+    }
+}

@@ -1,0 +1,251 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@using System.IO
+@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@using BlazorInputFile
+@using Lotus.Shared.Identity
+@using DataJuggler.Blazor.FileUpload
+@using System.Drawing
+@using System.Drawing.Imaging
+
+<div style="margin: 0 auto;width:50vw;">
+    <table class="mt-lg-5" style="margin: 0 auto; justify-content :center;text-align:center;">
+        <tr>
+            <td colspan="2">
+                <img id="DisplayImage" class="rounded-circle mb-4 NonSelectable" src="/StaticFiles/Logo.png" style="height:200px;width:200px;border:solid black 1px;cursor:pointer;" @onclick="ChangeClick" />
+                <InputFile OnChange="HandleFileSelected" accept="image/x-png,image/gif,image/jpeg" />
+            </td>
+        </tr>
+    </table>
+</div>
+<EditForm Model="RegisterModel" OnValidSubmit="HandleRegistration">
+    <DataAnnotationsValidator />
+    <div style="margin: 0 auto;width:50vw;">
+        <table style="margin: 0 auto; justify-content :center;text-align:center;">
+            <tr>
+                <td style="margin-top:3rem;" class="NonSelectable">Name: </td>
+                <td>
+                    <InputText @bind-Value="RegisterModel.FirstName" style="width:400px;" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <ValidationMessage For="@(() => RegisterModel.FirstName)" />
+                </td>
+            </tr>
+
+            <tr>
+                <td class="NonSelectable">Surname: </td>
+                <td>
+                    <InputText @bind-Value="RegisterModel.LastName" style="width:400px;margin-top:3rem;" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <ValidationMessage For="@(() => RegisterModel.LastName)" />
+                </td>
+            </tr>
+
+            <tr>
+                <td style="margin-top:3rem;" class="NonSelectable">Phone Number: </td>
+                <td>
+                    <InputText @bind-Value="RegisterModel.MobileNumber" style="width:400px;margin-top:3rem;" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <ValidationMessage For="@(() => RegisterModel.MobileNumber)" />
+                </td>
+            </tr>
+
+            <tr>
+                <td style="margin-top:3rem;" class="NonSelectable">Email: </td>
+                <td>
+                    <InputText @bind-Value="RegisterModel.Email" style="width:400px;margin-top:3rem;" accept="image/x-png,image/gif,image/jpeg" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <ValidationMessage For="@(() => RegisterModel.Email)" />
+                </td>
+            </tr>
+            <tr>
+                <td><h6>Details: </h6></td>
+                <td>
+                    <textarea style="resize:none;width:400px;margin-top:3rem;" cols="40" rows="5" @bind="Details"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button type="button" class="btn btn-success mt-2 mb-4 w-100" @onclick="HandleRegistration">Add</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</EditForm>
+
+
+@code {
+    [Parameter] public EventCallback<List<string>> onRegister { get; set; }
+    [Parameter] public EventCallback<List<string>> onReload { get; set; }
+    private RegisterModel RegisterModel = new RegisterModel();
+    private string ImageName, password = "";
+    private MultipartContent Image;
+    private string Details = "";
+    private bool ImageChanged = false;
+    private string extention = "";
+    bool created = false;
+    List<string> Parameters = new List<string>();
+    
+    protected override void OnInitialized()
+    {
+        ImageName = DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss-tt");
+        Console.WriteLine(ImageName);
+        password = Id_Generator.GeneratePassword();
+        Console.WriteLine(password);
+    }
+    string GetImageName()
+    {
+        return Id_Generator.Generate(20);
+    }
+
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            // Just load into .NET memory to show it can be done
+            // Alternatively it could be saved to disk, or parsed in memory, or similar
+            var ms = new MemoryStream();
+            await file.Data.CopyToAsync(ms);
+            extention = file.Name.Split(".")[1];
+            Image = new MultipartFormDataContent {
+                { new ByteArrayContent(ms.GetBuffer()), "\"images\"", ImageName + "." + file.Name.Split(".")[1] }
+            };
+            await JSRuntime.InvokeVoidAsync("previewFile", "DisplayImage");
+
+            ImageChanged = true;
+        }
+    }
+
+    private void ChangeClick()
+    {
+        JSRuntime.InvokeVoidAsync("FileInputClick");
+    }
+    private async Task HandleRegistration()
+    {
+
+        RegisterModel.Password = password;
+        RegisterModel.ConfirmPassword = password;
+
+        var result = await AuthService.RegisterStaff(RegisterModel);
+
+        if (result.Successful)
+        {
+            if (!ImageChanged)
+            {
+                ImageName = "Logo.png";
+            }
+            else
+            {
+                ImageName += "." + extention;
+            }
+            string Last_Staff_Id = await Http.GetStringAsync("api/Accounts/GrabLast_ID");
+            StaffModel staff = new StaffModel
+            {
+                Staff_Id = Last_Staff_Id,
+                Name = RegisterModel.FirstName,
+                Surname = RegisterModel.LastName,
+                Email = RegisterModel.Email,
+                Details = Details,
+                Phone_Number = Convert.ToInt64(RegisterModel.MobileNumber),
+                Image = ImageName
+
+
+            };
+            ResponseModel response = await Http.PostJsonAsync<ResponseModel>("Staff", staff);
+            if (response.Status)
+            {
+                created = true;
+                OpeningModel[] opening = await Http.GetJsonAsync<OpeningModel[]>("Opening");
+
+                var WorkingHours = new WorkingHoursModel
+                {
+                    Staff_Id = Last_Staff_Id,
+                    MondayHours = opening[0].Opening.ToString() + "-" + opening[0].Closing.ToString(),
+                    MondayClosed = opening[0].Closed,
+
+                    TuesdayHours = opening[1].Opening.ToString() + "-" + opening[1].Closing.ToString(),
+                    TuesdayClosed = opening[1].Closed,
+
+                    WednesdayHours = opening[2].Opening.ToString() + "-" + opening[2].Closing.ToString(),
+                    WednesdayClosed = opening[2].Closed,
+
+                    ThursdayHours = opening[3].Opening.ToString() + "-" + opening[3].Closing.ToString(),
+                    ThursdayClosed = opening[4].Closed,
+
+                    FridayHours = opening[4].Opening.ToString() + "-" + opening[4].Closing.ToString(),
+                    FridayClosed = opening[4].Closed,
+
+                    SaturdayHours = opening[5].Opening.ToString() + "-" + opening[5].Closing.ToString(),
+                    SaturdayClosed = opening[5].Closed,
+
+                    SundayHours = opening[6].Opening.ToString() + "-" + opening[6].Closing.ToString(),
+                    SundayClosed = opening[6].Closed
+                };
+
+                await Http.PostJsonAsync("WorkingHours", WorkingHours);
+                SettingsModel[] settings = await Http.GetJsonAsync<SettingsModel[]>("Settings");
+                string EmailBody = Lotus.Client.Properties.Resources.Email;
+
+                EmailBody = EmailBody.Replace("[Title]", "Welcome to the Team!");
+                EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+                EmailBody = EmailBody.Replace("[Message]", "This Email is sent to you to let you know that your Account has been created. Please click the link below the Account Details to log in and remember to change your password to seccure your account.");
+                EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/7bf8bee1aaa147d794dae385be5c7db8.jpg");
+                EmailBody = EmailBody.Replace("[Footer]", "Account Details: <br/> Email: [Email] <br/> Password: [Password] <br/> <br/> [Login]");
+
+                EmailBody = EmailBody.Replace("[Email]", RegisterModel.Email);
+                EmailBody = EmailBody.Replace("[Password]", password);
+                EmailBody = EmailBody.Replace("[Login]", "<a href='[Link]'>Click here to Login</a>");
+                EmailBody = EmailBody.Replace("[Link]", NavigationManager.BaseUri);
+                EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+                EmailBody = EmailBody.Replace("[End]", settings[0].Company_Name);
+                var email = new EmailModel
+                {
+                    Subject = "Welcome to the team",
+                    To = RegisterModel.Email,
+                    Body = EmailBody,
+                    HtmlBody = true
+                };
+
+                ResponseModel resultEmail = await Http.PostJsonAsync<ResponseModel>("Email", email);
+
+                Parameters.Add("");
+                await onReload.InvokeAsync(Parameters);
+                Parameters.Clear();
+                Parameters.Add(Last_Staff_Id);
+                Parameters.Add(RegisterModel.FirstName);
+                Parameters.Add(RegisterModel.LastName);
+                Parameters.Add(Details);
+                Parameters.Add(RegisterModel.Email);
+                Parameters.Add(RegisterModel.MobileNumber);
+                Parameters.Add(ImageName);
+                Parameters.Add(Last_Staff_Id);
+
+            }
+
+        }
+        if(ImageChanged)
+        {
+            await Http.PostAsync("Upload/Staff", Image);
+
+        }
+        if(created)
+        {
+            await onRegister.InvokeAsync(Parameters);
+        }
+    }
+}

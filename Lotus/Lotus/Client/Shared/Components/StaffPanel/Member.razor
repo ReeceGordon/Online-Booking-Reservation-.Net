@@ -1,0 +1,151 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+
+<div class="mt-lg-5" style="margin: 0 auto;width:50vw;">
+    <table class="mt-lg-5" style="margin: 0 auto; justify-content :center;text-align:center;border-collapse:initial;">
+        <tr>
+            <td colspan="2">
+                <div class="circleBase NonSelectable mb-4" style="display:table;border:solid;  border-radius: 50%; height:200px;width:200px;margin: 0 auto;border-color:@Border;background-color:@Color;">
+                    <h3 style="display:table-cell; vertical-align:middle;" class="NonSelectable">@Name[0]@Surname[0]</h3>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="margin-top:3rem;" class="NonSelectable">Name: </td>
+            <td><input style="width:400px;" value="@Name" readonly /></td>
+        </tr>
+        <tr>
+            <td class="NonSelectable">Surname: </td>
+            <td><input style="width:400px;margin-top:3rem;" value="@Surname" readonly /></td>
+        </tr>
+        <tr>
+            <td style="margin-top:3rem;" class="NonSelectable">Email: </td>
+            <td><input style="width:400px;margin-top:3rem;" value="@Email" readonly /><button @onclick="ShowEmailModal" class="btn btn-success text-white ml-1"><i class="fas fa-envelope"></i></button></td>
+        </tr>
+        <tr>
+            <td style="margin-top:3rem;" class="NonSelectable">Phone Number: </td>
+            <td><input style="width:400px;margin-top:3rem;" value="@Phone_Number" readonly /></td>
+        </tr>
+        <tr>
+            <td style="margin-top:3rem;" class="NonSelectable">Details: </td>
+            <td><textarea style="width:400px;margin-top:3rem;resize:none" cols="40" rows="5" @bind="Notes"></textarea></td>
+        </tr>
+    </table>
+</div>
+@if (EmailModal)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 10vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title NonSelectable"></h5>
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="CloseEmailModal">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @if (errorMessage != "")
+                        {
+                            <h5 class="w-100 NonSelectable" style="color:darkred">@errorMessage</h5>
+                            <br />
+                        }
+                        <input @bind="Subject" placeholder="Subject" style="width:100%;" />
+                        <br />
+                        <textarea class="mt-2" cols="50" rows="10" style="width:100%;resize:none;" placeholder="Message" @bind="Body"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseEmailModal">Cancel</button>
+
+                        <button type="button" class="btn btn-success" @onclick="SendEmail">Send</button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool isLoading = true;
+    [Parameter] public string StaffFullName { get; set; }
+    [Parameter] public string Id { get; set; }
+    [Parameter] public string Name { get; set; }
+    [Parameter] public string Surname { get; set; }
+    [Parameter] public string Email { get; set; }
+    [Parameter] public string Phone_Number { get; set; }
+    [Parameter] public string Border { get; set; }
+    [Parameter] public string Color { get; set; }
+    private bool EmailModal = false;
+    private string Subject, Body, errorMessage,Notes;
+    /// <summary>
+    /// on initialized gets the members notes
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        MembersModel[] member = await Http.GetJsonAsync<MembersModel[]>($"Members/Get/{Id}");
+        Notes = member[0].Notes;
+        isLoading = false;
+    }
+    /// <summary>
+    /// shows the email modal
+    /// </summary>
+    private void ShowEmailModal()
+    {
+
+        EmailModal = true;
+    }
+    /// <summary>
+    /// closed the emal modal
+    /// </summary>
+    private void CloseEmailModal()
+    {
+        EmailModal = false;
+    }
+    /// <summary>
+    /// used to send an email to the member
+    /// </summary>
+    /// <returns></returns>
+    private async Task SendEmail()
+    {
+        if (Subject != "" && Body != "")
+        {
+
+
+            string EmailBody = Lotus.Client.Properties.Resources.Email;
+
+            EmailBody = EmailBody.Replace("[Title]", "Dear " + Name + " " + Surname + ",");
+            EmailBody = EmailBody.Replace("[Header]", "Hope this email finds you well!");
+            EmailBody = EmailBody.Replace("[Message]", Body);
+            EmailBody = EmailBody.Replace("[Image]", "https://i.gyazo.com/f51f8725a57053347218537954c0954b.jpg");
+            // EmailBody = EmailBody.Replace("[Footer]", "Booking Recap:<br /> Date: [Date]<br /> Time: [Time]<br /> Appointment Type: [Type]<br /> Staff Member: [Staff]");
+
+            EmailBody = EmailBody.Replace("[ClosingRemarks]", "Cheers,");
+            EmailBody = EmailBody.Replace("[End]", StaffFullName);
+            var email = new EmailModel
+            {
+                Subject = Subject,
+                To = Email,
+                Body = EmailBody,
+                HtmlBody = true
+            };
+
+            ResponseModel result = await Http.PostJsonAsync<ResponseModel>("Email", email);
+            CloseEmailModal();
+            Subject = "";
+            Body = "";
+        }
+        else
+        {
+            errorMessage = "Email must hava a subject and a message";
+        }
+    }
+}

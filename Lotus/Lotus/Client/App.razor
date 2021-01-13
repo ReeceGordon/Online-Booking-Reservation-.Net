@@ -1,0 +1,19 @@
+﻿@inject NavigationManager navmanager
+<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <CascadingAuthenticationState>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <div style="text-align:center;position: fixed;width:100%; top: 50%;left: 50%;-webkit-transform: translate(-50%, -50%);transform: translate(-50%, -50%);">
+                    <i class="far fa-frown" style="color:rgba(255, 255, 255, 0.82);font-size:20rem;"></i>
+                    <h1 class="display-1 mt-3" style="color:rgba(255, 255, 255, 0.82)">404</h1>
+                    <h2 class="mt-2" style="color:rgba(255, 255, 255, 0.50)">Page not found</h2>
+                    <h3 class="mt-2" style="color:rgba(255, 255, 255, 0.65)">The page you are looking for doesn't exist or another error occured.</h3>
+                    <h3 class="mt-2" style="color:rgba(255, 255, 255, 0.65)">Go back, or head over to <b><a style="color:rgba(255, 255, 255, 0.65);" href="/">@navmanager.BaseUri</a></b> to choose a new direction.</h3>
+                </div>
+            </LayoutView>
+        </CascadingAuthenticationState>
+    </NotFound>
+</Router>

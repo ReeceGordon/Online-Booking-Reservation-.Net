@@ -1,0 +1,386 @@
+﻿@using Lotus.Client.Shared.Tools
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@using Lotus.Shared.Identity
+
+<img class="rounded d-block ml-auto mr-auto mt-4 mb-4 logoSizing" src="/StaticFiles/Logo.png" alt="Logo">
+@if (Login_Screen)
+{
+
+    <h5 class="mt-2" style="color:black">Login</h5>
+
+    @if (ShowErrorsLogin)
+    {
+        <div class="alert alert-@bootColour" role="alert">
+            @if (@Error == "Email Validation required to sign in.")
+            {
+                <p style="margin-bottom: 0">@Error</p>
+                if (isEmailResent)
+                {
+                    @foreach (var error in ErrorsResend)
+                    {
+                        <p style="margin-bottom: 0">@error</p>
+                    }
+                }
+                else
+                {
+                    <a href="" @onclick="ResendEmail">Click to resend</a>
+                }
+            }
+            else
+            {
+                <p style="margin-bottom: 0">@Error</p>
+            }
+        </div>
+    }
+    @if (ShowEmailValidation)
+    {
+        <div class="alert alert-warning" role="alert">
+            @foreach (var error in Errors)
+            {
+                <p style="margin-bottom: 0">@error</p>
+            }
+        </div>
+    }
+    @if (!(string.IsNullOrEmpty(aName)))
+    {
+        <div class="alert alert-success" role="alert">
+            <p style="margin-bottom: 0">Validation succeess! You may now login.</p>
+        </div>
+    }
+    @if (!(string.IsNullOrEmpty(tPass)))
+    {
+        <div class="alert alert-success" role="alert">
+            <p style="margin-bottom: 0">Password Reset! Temporary Password: @tPass</p>
+        </div>
+    }
+    if (loginModel.Password == "T1!PaSR3sEt")
+    {
+        <div class="alert alert-warning" role="alert">
+            <p style="margin-bottom: 0">Password reset email has been sent.</p>
+        </div>
+    }
+    else if (loginModel.Password == "F1!Pdsj2Ajd!dA")
+    {
+        <div class="alert alert-danger" role="alert">
+            <p style="margin-bottom: 0">Invalid user email.</p>
+        </div>
+    }
+
+
+    <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <div class="col-md-12">
+                <InputText placeholder="Email address" Id="email" Class="form-control" @bind-Value="loginModel.Email" />
+                <ValidationMessage For="@(() => loginModel.Email)" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-12">
+                <InputText placeholder="Password" Id="password" type="password" Class="form-control" @bind-Value="loginModel.Password" />
+                <ValidationMessage For="@(() => loginModel.Password)" />
+            </div>
+        </div>
+
+        <span>
+            <a class="loginRegLink" href="" @onclick="Change_Screen" style="color:dodgerblue">Not a member? Register now</a>
+        </span>
+        <button class="btn btn-success FixedWidthLoginBoxButton mx-4" type="submit">Sign-In</button>
+        <div class="mb-2">
+            <a class="loginRegLink" href="" @onclick="ResetPassword" style="color:dodgerblue">Forgotten password? Click Here</a>
+        </div>
+    </EditForm>
+
+}
+else
+{
+
+    <h5 class="mt-2" style="color:black">Register</h5>
+
+    @if (ShowErrors)
+    {
+        <div class="alert alert-danger" role="alert">
+            @foreach (var error in Errors)
+            {
+                <p>@error</p>
+            }
+        </div>
+    }
+
+
+    <EditForm Model="RegisterModel" OnValidSubmit="HandleRegistration">
+        <DataAnnotationsValidator />
+
+
+        @if (Step == 0)
+        {
+
+            <div class="form-group">
+                <div class="col-md-12">
+                    <InputText placeholder="First Name" Id="firstname" class="form-control" @bind-Value="RegisterModel.FirstName" />
+                    <ValidationMessage For="@(() => RegisterModel.FirstName)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-12">
+                    <InputText placeholder="Last Name" Id="lastname" class="form-control" @bind-Value="RegisterModel.LastName" />
+                    <ValidationMessage For="@(() => RegisterModel.LastName)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-12">
+                    <InputText placeholder="Phone Number" Id="phonenumber" class="form-control" @bind-Value="RegisterModel.MobileNumber" />
+                    <ValidationMessage For="@(() => RegisterModel.MobileNumber)" />
+                </div>
+            </div>
+
+            <span>
+                <a class="loginRegLink" href="" @onclick="Change_Screen" style="color:dodgerblue">Already a member? Log-In now</a>
+            </span>
+            <button class="btn btn-secondary FixedWidthLoginBoxButton mb-4" type="button" @onclick="Change_Step">Next</button>
+        }
+        else
+        {
+            <div class="form-group">
+                <div class="col-md-12">
+                    <InputText placeholder="Email" Id="email" class="form-control" @bind-Value="RegisterModel.Email" />
+                    <ValidationMessage For="@(() => RegisterModel.Email)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-12">
+                    <InputText placeholder="Password" Id="password" type="password" class="form-control" @bind-Value="RegisterModel.Password" />
+                    <ValidationMessage For="@(() => RegisterModel.Password)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-12">
+                    <InputText placeholder="Confirm Password" Id="password" type="password" class="form-control" @bind-Value="RegisterModel.ConfirmPassword" />
+                    <ValidationMessage For="@(() => RegisterModel.ConfirmPassword)" />
+                </div>
+            </div>
+
+
+            <span>
+                <a class="loginRegLink" href="" @onclick="Change_Screen" style="color:dodgerblue">Already a member? Log-In now</a>
+            </span>
+
+            <button class="btn btn-secondary mt-2 mb-4" style="width:45%" type="button" @onclick="Change_Step">Previous</button>
+            <button type="submit" class="btn btn-success mt-2 mb-4" style="width:45%">Register</button>
+        }
+    </EditForm>
+
+
+
+
+
+
+}
+@code {
+
+    [Parameter]
+    public string aName { get; set; }
+
+    [Parameter]
+    public string tPass { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await authenticationStateTask).User;
+
+        //If a user is already logged in and goes back to the home page, they are redirected to the respective page.
+        if (user.IsInRole("Admin"))
+        {
+            Console.WriteLine("A Admin logged in.");
+            NavigationManager.NavigateTo("AdminPanel"); //AdminPanel
+        }
+        else if (user.IsInRole("Staff"))
+        {
+            Console.WriteLine("A Staff logged in.");
+            NavigationManager.NavigateTo("StaffPanel"); //StaffPanel
+        }
+        else if (user.IsInRole("User"))
+        {
+            Console.WriteLine("A User logged in.");
+            NavigationManager.NavigateTo("MembersPanel"); //StaffPanel
+        }
+    }
+
+
+    //Authentication Code
+
+    private RegisterModel RegisterModel = new RegisterModel();
+    private bool ShowErrors;
+    private bool ShowEmailValidation;
+    private IEnumerable<string> Errors;
+    private IEnumerable<string> ErrorsResend;
+
+    private async Task HandleRegistration()
+    {
+        ShowErrors = false;
+        ShowErrorsLogin = false;
+
+        var result = await AuthService.Register(RegisterModel);
+
+        if (result.Successful)
+        {
+            Errors = result.Errors;
+            ShowEmailValidation = true;
+
+            Change_Screen();
+        }
+        else
+        {
+            Errors = result.Errors;
+            ShowErrors = true;
+        }
+    }
+
+
+    private LoginModel loginModel = new LoginModel();
+    private bool ShowErrorsLogin;
+    private string Error = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private async Task HandleLogin()
+    {
+        ShowErrorsLogin = false;
+
+        var result = await AuthService.Login(loginModel);
+        var user = (await authenticationStateTask).User;
+
+
+        if (result.Successful)
+        {
+            Console.WriteLine("Successfully Logged In.");
+
+            NavigationManager.NavigateTo("AccountVerification");
+        }
+        else
+        {
+
+            Console.WriteLine("Login has failed!.");
+            Error = result.Error;
+            ShowErrorsLogin = true;
+            ShowEmailValidation = false;
+        }
+    }
+
+    bool isEmailResent { get; set; }
+    string bootColour = "danger";
+    private async Task ResendEmail()
+    {
+        var result = await Http.PostJsonAsync<RegisterResult>("api/Accounts/ResendEmailValidation", loginModel);
+
+        if (result.Successful)
+        {
+            //Emails was successfully sent.
+            ErrorsResend = result.Errors;
+            isEmailResent = true;
+            bootColour = "warning";
+        }
+        else
+        {
+            ErrorsResend = result.Errors;
+            isEmailResent = false;
+        }
+
+    }
+
+    private async Task ResetPassword()
+    {
+        loginModel.Password = "null332SS";
+        var result = await Http.PostJsonAsync<RegisterResult>("api/Accounts/SendPasswordReset", loginModel);
+
+        if (result.Successful)
+        {
+            loginModel.Password = "T1!PaSR3sEt";
+            Console.WriteLine("ResetPassword called Success");
+            foreach (var error in result.Errors)
+            {
+                Console.WriteLine(error);
+            }
+            //Emails was successfully sent.
+            ErrorsResend = result.Errors;
+            isEmailResent = true;
+            bootColour = "warning";
+        }
+        else
+        {
+            loginModel.Password = "F1!Pdsj2Ajd!dA";
+            Console.WriteLine("ResetPassword called Fail");
+            foreach (var error in result.Errors)
+            {
+                Console.WriteLine(error);
+            }
+            ErrorsResend = result.Errors;
+            isEmailResent = false;
+        }
+
+    }
+
+
+
+
+    //Pre Code
+
+    private bool Login_Screen = true;
+    private int Step = 0;
+    private string Username_Login, Password_Login = "";
+    private void Clear_Register()
+    {
+        RegisterModel.LastName = "";
+        RegisterModel.FirstName = "";
+        RegisterModel.Email = "";
+        RegisterModel.Password = "";
+        RegisterModel.ConfirmPassword = "";
+        RegisterModel.MobileNumber = "";
+    }
+    private void Change_Screen()
+    {
+        Clear_Register();
+        if (Login_Screen)
+        {
+            Login_Screen = false;
+            Step = 0;
+        }
+        else
+        {
+            Login_Screen = true;
+        }
+
+    }
+    private void Change_Step()
+    {
+        if (Step == 0)
+        {
+
+            Step = 1;
+        }
+        else
+        {
+            Step = 0;
+        }
+    }
+    /*private async Task<string> Generate_ID()
+    {
+        string Unique_ID = Id_Generator.Generate();
+        if (await Http.GetStringAsync($"Accounts/Validate_ID/{Unique_ID}") == "false")
+        {
+            await Generate_ID();
+        }
+
+        return Unique_ID;
+
+    }*/
+}

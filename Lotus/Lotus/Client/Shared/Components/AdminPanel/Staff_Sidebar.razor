@@ -1,0 +1,133 @@
+﻿@using Lotus.Shared
+@using System.Linq
+@using System
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<div style="min-height:10vh">
+    <div class="form-inline mt-2">
+        <div class="form-group" style="width:100%;">
+            <div class="input-group">
+
+                <input type="text" class="form-control" placeholder="Criteria" @bind="@Criteria" @onkeypress="(e => EnterPressed(e))" id="StaffSearch">
+                <button class="btn input-group-addon btn-danger" style="outline:none;" @onclick="ClearFilter">x</button>
+            </div>
+        </div>
+        <button class="btn btn-success mt-1" style="width:100%;" @onclick="Search">Search</button>
+    </div>
+</div>
+<div style="max-height:77vh;text-align:center;overflow-y:auto">
+    @if (!isLoading)
+    {
+        @foreach (var staff in staffList)
+        {
+            if (SelectedStaff == staff.Staff_Id)
+            {
+                <div class="mt-3">
+                    <img class="rounded-circle d-block NonSelectable" style="width:80px;height:80px;margin:0 auto;cursor:pointer" src="/StaticFiles/Staff/@staff.Image" alt="@staff.Image" id="StaffBorderSelected">
+                    <h5 class="NonSelectable">@staff.Name</h5>
+                    <h5 class="NonSelectable">@staff.Surname</h5>
+                </div>
+            }
+            else
+            {
+                <div class="mt-3">
+                    <img @onclick="(() => SelectStaff(staff.Staff_Id, staff.Name, staff.Surname, staff.Details, staff.Email, staff.Phone_Number.ToString(), staff.Image))" class="rounded-circle d-block NonSelectable" style="width:80px;height:80px;margin:0 auto;cursor:pointer" src="/StaticFiles/Staff/@staff.Image" alt="@staff.Image" id="StaffBorder">
+                    <h5 class="NonSelectable">@staff.Name</h5>
+                    <h5 class="NonSelectable">@staff.Surname</h5>
+                </div>
+            }
+
+        }
+
+
+    }
+
+</div>
+<div style="max-height:10vh;text-align:center;">
+    <div class="circleBase NonSelectable mt-1" style="height:80px;width:80px;margin: 0 auto;cursor:pointer;" id="AddOption" @onclick="ChangeWindow">
+        <i class="fas fa-plus NonSelectable " style="margin: 27%;font-size:2rem;cursor:pointer;"></i>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<List<string>> onSelected { get; set; }
+    [Parameter] public EventCallback<List<string>> onChangeWindow { get; set; }
+    [Parameter] public EventCallback<List<string>> FilterStaff { get; set; }
+    [Parameter] public StaffModel[] staffList { get; set; }
+    [Parameter] public string SelectedStaff {get; set;}
+    private List<string> Parameters = new List<string>();
+    private bool isLoading = true;
+    private string Criteria = "";
+    protected override void OnInitialized()
+    {
+        isLoading = false;
+    }
+    /// <summary>
+    /// shows ther information of the current staff
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name">name of the member in string</param>
+    /// <param name="surname">surname of the member in string</param>
+    /// <param name="details">details of the member in string</param>
+    /// <param name="email">email of the member in string</param>
+    /// <param name="phone_number">phone number of the member in long</param>
+    /// <param name="image">image name of the member</param>
+    private void SelectStaff(string id, string name, string surname, string details, string email, string phone_number, string image)
+    {
+        Parameters.Clear();
+        Parameters.Add(id);
+        Parameters.Add(name);
+        Parameters.Add(surname);
+        Parameters.Add(details);
+        Parameters.Add(email);
+        Parameters.Add(phone_number);
+        Parameters.Add(image);
+        Parameters.Add(id);
+        SelectedStaff = id;
+        onSelected.InvokeAsync(Parameters);
+    }
+    /// <summary>
+    /// changes the window to add a new staff member
+    /// </summary>
+    private void ChangeWindow()
+    {
+        ClearFilter();
+        Parameters.Clear();
+        Parameters.Add("Add");
+        onChangeWindow.InvokeAsync(Parameters);
+    }
+    /// <summary>
+    /// clears the search filter
+    /// </summary>
+    private void ClearFilter()
+    {
+        Criteria = "";
+        Search();
+    }
+    /// <summary>
+    /// filters the members based on the filter
+    /// </summary>
+    private void Search()
+    {
+        List<string> Parameters = new List<string>();
+        Parameters.Add(Criteria);
+        FilterStaff.InvokeAsync(Parameters);
+
+
+    }
+    /// <summary>
+    /// used to identify if the enter key is pressed in the criteria box
+    /// </summary>
+    /// <param name="args">key type</param>
+    private async Task EnterPressed(KeyboardEventArgs args)
+    {
+
+        if (args.Key == "Enter")
+        {
+            Criteria = await JSRuntime.InvokeAsync<string>("GetText", "StaffSearch");
+            Search();
+        }
+    }
+
+}

@@ -1,0 +1,52 @@
+﻿@page "/"
+@page "/emailVerified/{isVerified}"
+@page "/PasswordReset/{TempPassword}"
+@using Lotus.Shared
+@using Lotus.Client.Shared.Components.Home
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.Net.Http
+@using Lotus.Client.Shared.Tools
+
+
+
+<div class="container-fluid px-0" style="">
+    <div class="row no-gutters">
+        <div class="col-md-12">
+            @if (string.IsNullOrEmpty(isVerified) && (string.IsNullOrEmpty(TempPassword)))
+            {
+                <Carousel />
+            }
+            else if (isVerified == "TRUE")
+            {
+                <Carousel cName="@isVerified" />
+            }
+            else if (TempPassword != null)
+            {
+                <Carousel tempPass="@TempPassword" />
+            }
+        </div>
+    </div>
+    <div class="row mt-1 no-gutters" style="min-height: 38vh;">
+        <div class="col-md-4">
+            <Categories_Showcase />
+        </div>
+        <div class="col-md-4">
+            <Team_Carousel />
+        </div>
+        <div class="col-md-4">
+            <Contact_Details />
+        </div>
+    </div>
+</div>
+
+@code{
+    [Parameter]
+    public string isVerified { get; set; }
+
+    [Parameter]
+    public string TempPassword { get; set; }
+
+
+}

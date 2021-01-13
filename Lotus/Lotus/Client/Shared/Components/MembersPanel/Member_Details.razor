@@ -1,0 +1,87 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.Reflection;
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+@using System.Globalization;
+
+@if (!isLoading)
+{
+
+
+    <table class="mt-lg-5" style="margin: 0 auto; justify-content :center;text-align:center;border-collapse:initial;">
+        <tr>
+            <td colspan="2">
+                <div class="circleBase NonSelectable mb-4" style="display:table;border:solid;  border-radius: 50%; height:200px;width:200px;margin: 0 auto;border-color:black;background-color:grey;">
+                    <h1 style="display:table-cell; vertical-align:middle;font-size:5rem;" class="NonSelectable">@Member[0].Name[0]@Member[0].Surname[0]</h1>
+                </div>
+            </td>
+        </tr>
+        <tr>
+
+            <td colspan="2"><h3>@Member[0].Name @Member[0].Surname</h3></td>
+        </tr>
+        <tr>
+            <td colspan="2"><h5>@Member[0].Email</h5></td>
+        </tr>
+        <tr>
+            <td><h5>Phone Number: </h5></td>
+            <td><input type="number" @bind="@Phone_Number" /></td>
+        </tr>
+        <tr>
+            <td colspan="2"><button class="btn btn-secondary mt-2 w-100" @onclick="ChangeDisplay">Cancel</button></td>
+        </tr>
+        <tr>
+            <td colspan="2"><button class="btn btn-success mt-2 w-100" @onclick="Save">Update</button></td>
+        </tr>
+    </table>
+}
+
+@code {
+    [Parameter] public EventCallback<string> ChangeWindow { get; set; }
+    [Parameter] public string MemberId { get; set; }
+    bool isLoading = true;
+    long Phone_Number = 0;
+    MembersModel[] Member;
+    /// <summary>
+    /// once the page is being initialized it loads all the members details
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        Member = await Http.GetJsonAsync<MembersModel[]>($"Members/Get/{MemberId}");
+        Phone_Number = Member[0].Phone_Number;
+        isLoading = false;
+    }
+    /// <summary>
+    /// Save the members phone number
+    /// </summary>
+    /// <returns></returns>
+    private async Task Save()
+    {
+        MembersModel member = new MembersModel
+        {
+            Member_Id = MemberId,
+            Name = Member[0].Name,
+            Surname = Member[0].Surname,
+            Email = Member[0].Email,
+            Phone_Number = Phone_Number,
+            Notes = Member[0].Notes
+
+        };
+
+        await Http.PutJsonAsync("Members", member);
+    }
+    /// <summary>
+    /// goes back to all the appointments
+    /// </summary>
+    private void ChangeDisplay()
+    {
+        ChangeWindow.InvokeAsync("All");
+    }
+}

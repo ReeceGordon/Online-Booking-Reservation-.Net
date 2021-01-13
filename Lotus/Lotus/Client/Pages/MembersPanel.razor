@@ -1,0 +1,61 @@
+﻿@page "/MembersPanel"
+@using Lotus.Client.Shared.Components.MembersPanel;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<AuthorizeView Roles="User">
+    <Authorized>
+        @if (!isLoading)
+        {
+            <BookingAppointment MemberId="@MemberId" />
+        }
+    </Authorized>
+    <NotAuthorized>
+        @if (true)
+        {
+            Aunothorized();
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
+@code{
+
+        // @attribute [Authorize(Roles = "Admin, Staff, User")]  Original auth tag to prevent access.
+        bool isLoading = true;
+        string MemberId = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    /// <summary>
+    /// when being initialized grabs the logged in users id
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await authenticationStateTask).User;
+
+        if (user.IsInRole("User"))
+        {
+            if (user.IsInRole("Admin"))
+            {
+                Aunothorized();
+            }
+            else if (user.IsInRole("Staff"))
+            {
+                Aunothorized();
+            }
+            else
+            {
+                MemberId = await Http.GetStringAsync("api/Accounts/Grab_ID");
+                isLoading = false;
+            }
+        }
+    }
+    /// <summary>
+    /// if aunothorized access is attempted to take the user to the index page
+    /// </summary>
+    void Aunothorized()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

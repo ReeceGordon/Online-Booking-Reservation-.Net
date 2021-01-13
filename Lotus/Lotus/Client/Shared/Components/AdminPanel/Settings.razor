@@ -1,0 +1,653 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Shared.Identity
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+@using BlazorInputFile
+@if (!isLoading)
+{
+    <div class="ml-4">
+        <table class="mt-5 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">General</h2></td>
+            </tr>
+        </table>
+        <hr />
+        <table class="ml-2">
+            <tr>
+                <td class="NonSelectable">Company Name:</td>
+                <td><input @bind="Company_Name" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Email:</td>
+                <td><input @bind="Email" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Phone_Number:</td>
+                <td><input type="number" @bind="Phone_Number" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Address:</td>
+                <td><input @bind="Address" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Currency:</td>
+                <td><input @bind="Currency" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Aproval Required:</td>
+                <td><input type="checkbox" @bind="Require_Aproval" /><br /></td>
+            </tr>
+            <tr>
+                <td colspan="2"><h6 style="color:darkred" class="NonSelectable ml-2 mt-2">@GeneralError</h6></td>
+            </tr>
+            <tr class="mt-2">
+                <td></td>
+                <td><button @onclick="SaveGeneral" class="btn btn-success w-100">Save</button></td>
+            </tr>
+        </table>
+
+        <!--Security Section-->
+
+        <table class="mt-4 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">Security</h2></td>
+            </tr>
+        </table>
+        <hr class="NonSelectable" />
+
+        @if (pChangeResult != null)
+        {
+            @foreach (var error in pChangeResult.Errors)
+            {
+                if (error == "Password successfully changed.")
+                {
+                    <div class="col-md-2 alert alert-success" role="alert">
+                        <p>@error</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-2 alert alert-danger" role="alert">
+                        <p>@error</p>
+                    </div>
+                }
+            }
+        }
+    <EditForm Model="changePasswordModel" OnValidSubmit="HandlePassChange">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <div class="col-md-2">
+                <InputText placeholder="Current Password" type="password" autocomplete="current-password" Id="password" Class="form-control " @bind-Value="changePasswordModel.OldPassword" />
+                <ValidationMessage For="@(() => changePasswordModel.OldPassword)" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-2">
+                <InputText placeholder="New Password" Id="password" type="password" autocomplete="new-password" Class="form-control " @bind-Value="changePasswordModel.NewPassword" />
+                <ValidationMessage For="@(() => changePasswordModel.NewPassword)" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-2">
+                <InputText placeholder="Confirm New Password" Id="password" type="password" autocomplete="new-password" Class="form-control " @bind-Value="changePasswordModel.ConfirmNewPassword" />
+                <ValidationMessage For="@(() => changePasswordModel.ConfirmNewPassword)" />
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-success" type="submit">Change Password</button>
+            </div>
+    </EditForm>
+
+        <!--Images Section-->
+
+        <h2 class="mt-4 ml-2 NonSelectable">Images</h2>
+        <h6 class="NonSelectable ml-2" style="color:darkred;">Note: Click on an Image to enlarge it and edit it</h6>
+        <hr class="NonSelectable" />
+        <table>
+            <tr>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="/StaticFiles/Carousel/@CarouselImg1" alt="@CarouselImg1" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image1" @onclick='(() => OpenImage("/StaticFiles/Carousel/Image1.jpg","Image1"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="/StaticFiles/Carousel/@CarouselImg2" alt="@CarouselImg2" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image2" @onclick='(() => OpenImage("/StaticFiles/Carousel/Image2.jpg","Image2"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="/StaticFiles/Carousel/@CarouselImg3" alt="@CarouselImg3" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image3" @onclick='(() => OpenImage("/StaticFiles/Carousel/Image3.jpg","Image3"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="/StaticFiles/Carousel/@CarouselImg4" alt="@CarouselImg4" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Image4" @onclick='(() => OpenImage("/StaticFiles/Carousel/Image4.jpg","Image4"))' /></td>
+                <td class="NonSelectable"><img class="NonSelectable rounded ml-2" src="/StaticFiles/@LogoImg" alt="@LogoImg" style="border:solid 1px black;height:200px;width:200px;object-fit:fill;cursor:pointer;" id="Logo" @onclick='(() => OpenImage("/StaticFiles/Logo.png","Logo"))' /></td>
+            </tr>
+        </table>
+
+        <!--Email Section-->
+
+        <table class="mt-4 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">Email settings</h2></td>
+            </tr>
+        </table>
+        <hr class="NonSelectable" />
+        <table class="ml-2">
+            <tr>
+                <td class="NonSelectable">Email:</td>
+                <td><input @bind="Email_Sender" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Password:</td>
+                <td><input type="password" @bind="Email_Pass" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Smtp Server:</td>
+                <td><input @bind="SmtpServer" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Port:</td>
+                <td><input type="number" @bind="Port" /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">SSL:</td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            @SSL
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <a class="dropdown-item NonSelectable" @onclick='(() => SLLSetting("true"))'>true</a>
+                            <a class="dropdown-item NonSelectable" @onclick='(() => SLLSetting("false"))'>false</a>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2"><h6 style="color:darkred" class="NonSelectable ml-2 mt-2">@EmailError</h6></td>
+            </tr>
+            <tr class="mt-2">
+                <td></td>
+                <td><button @onclick="SaveEmail" class="btn btn-success w-100">Save</button></td>
+            </tr>
+        </table>
+
+        <!--Opening Section-->
+
+        <table class="mt-4 ml-2">
+            <tr>
+                <td><h2 class="NonSelectable">Work Hours settings</h2></td>
+            </tr>
+        </table>
+        <hr class="NonSelectable" />
+        <table class="ml-2 mb-4" style="text-align:center;">
+            <tr>
+                <th>Day</th>
+                <th>Opening<br />Hour</th>
+                <th>To</th>
+                <th>Closing<br />Hour</th>
+                <th>Closed</th>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Monday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="MondayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="MondayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="MondayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Tuesday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="TuesdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="TuesdayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="TuesdayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Wednesday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="WednesdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="WednesdayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="WednesdayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Thursday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="ThursdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="ThursdayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="ThursdayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Friday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="FridayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="FridayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="FridayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Saturday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="SaturdayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="SaturdayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="SaturdayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td class="NonSelectable">Sunday:</td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="SundayOpening" /></td>
+                <td style="padding:0 15px 0 15px;"> To </td>
+                <td style="padding:0 15px 0 15px;"><input type="number" min="1" max="24" @bind="SundayClosing" /></td>
+                <td style="padding:0 15px 0 15px;"><input type="checkbox" @bind="SundayClosed" /><br /></td>
+            </tr>
+            <tr>
+                <td colspan="5"><h6 style="color:darkred" class="NonSelectable ml-2 mt-2">@OpeningError</h6></td>
+            </tr>
+            <tr class="mt-2">
+                <td style="padding:0 15px 0 15px;"></td>
+                <td colspan="4" style="padding:0 15px 0 15px;"><button @onclick="SaveOpening" class="btn btn-success w-100">Save</button></td>
+            </tr>
+        </table>
+
+
+    </div>
+
+    @if (ImageEditor)
+    {
+        <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+            <div class="vertical-alignment-helper">
+                <div class="modal-dialog vertical-align-center" role="document">
+                    <div class="modal-content" style="max-width: 51vw">
+                        <div class="modal-header">
+                            <h5 class="modal-title NonSelectable"></h5>
+                            <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="CloseImageEditor">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <img id="DisplayImage" class="NonSelectable rounded" src="@DisplayImage" alt="DisplayImage" style="height:50vh;width:50vw;object-fit:fill;margin-left:-0.5rem;" />
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseImageEditor">Cancel</button>
+                            <button type="button" class="btn btn-info" @onclick="ChangeClick">Change</button>
+                            <InputFile OnChange="HandleFileSelected" accept="image/x-png,image/gif,image/jpeg"/>
+                            <button type="button" class="btn btn-success" @onclick="UploadImage">Save</button>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+@code {
+
+    private RegisterResult pChangeResult { get; set; }
+    private ChangePasswordModel changePasswordModel = new ChangePasswordModel();
+
+
+        private async Task HandlePassChange()
+    {
+        pChangeResult = await Http.PostJsonAsync<RegisterResult>("api/accounts/ChangePassword", changePasswordModel);
+
+        if (pChangeResult.Successful)
+        {
+            changePasswordModel.OldPassword = "";
+            changePasswordModel.NewPassword = "";
+            changePasswordModel.ConfirmNewPassword = "";
+            Console.WriteLine("Password Successfully Changed.");
+        }
+        else
+        {
+            Console.WriteLine("Password Couldn't be changed!");
+        }
+    }
+
+
+    private int MondayOpening, TuesdayOpening, WednesdayOpening, ThursdayOpening, FridayOpening, SaturdayOpening, SundayOpening;
+    private int MondayClosing, TuesdayClosing, WednesdayClosing, ThursdayClosing, FridayClosing, SaturdayClosing, SundayClosing;
+    private bool MondayClosed, TuesdayClosed, WednesdayClosed, ThursdayClosed, FridayClosed, SaturdayClosed, SundayClosed, Require_Aproval;
+    private long Phone_Number;
+    private string Port, Email, Address, Currency, Password, Email_Sender, SmtpServer, Email_Pass, SSL, Company_Name, New_Password, Re_Password, LogoImg, CarouselImg1, CarouselImg2, CarouselImg3, CarouselImg4;
+    private SettingsModel[] settings;
+    private OpeningModel[] hours;
+    private bool isLoading = true;
+    private string SecurityError = "";
+    private string GeneralError = "";
+    private string EmailError = "";
+    private string OpeningError = "";
+    private string DisplayImage = "";
+    private bool ImageEditor = false;
+    private string ImageType;
+    private MultipartContent Image;
+    /// <summary>
+    /// Loads the setting and hours of the company when initialized
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        settings = await Http.GetJsonAsync<SettingsModel[]>("Settings");
+        hours = await Http.GetJsonAsync<OpeningModel[]>("Opening");
+        SetSettings();
+        SetHours();
+        isLoading = false;
+    }
+    /// <summary>
+    /// used to convert the image to a byte array and store it
+    /// </summary>
+    async Task HandleFileSelected(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            // Just load into .NET memory to show it can be done
+            // Alternatively it could be saved to disk, or parsed in memory, or similar
+            var ms = new MemoryStream();
+            await file.Data.CopyToAsync(ms);
+            Console.WriteLine(ImageType + "." + file.Name.Split(".")[1]);
+            Image = new MultipartFormDataContent {
+                { new ByteArrayContent(ms.GetBuffer()), "\"images\"", ImageType + "." + file.Name.Split(".")[1] }
+            };
+
+            await JSRuntime.InvokeVoidAsync("previewFile","DisplayImage");
+        }
+    }
+    /// <summary>
+    /// used to send the binary image to the upload controller and then preview the new image
+    /// </summary>
+    private async Task UploadImage()
+    {
+        await Http.PostAsync("Upload", Image);
+        await JSRuntime.InvokeVoidAsync("previewFile", ImageType);
+        CloseImageEditor();
+    }
+    /// <summary>
+    /// sets the ssl setting to be shown based on the selection made
+    /// </summary>
+    /// <param name="option">true or false in string format</param>
+    private void SLLSetting(string option)
+    {
+        SSL = option;
+    }
+    /// <summary>
+    /// fills all the input boxes with the returned values from the result of the controllers
+    /// </summary>
+    private void SetSettings()
+    {
+        Email = settings[0].Email;
+        Address = settings[0].Address;
+        Currency = settings[0].Currency;
+        Email_Sender = settings[0].Email_Sender;
+        SmtpServer = settings[0].SmtpServer;
+        SSL = settings[0].SSL;
+        Company_Name = settings[0].Company_Name;
+        Phone_Number = settings[0].Phone_Number;
+        Port = settings[0].Port;
+        CarouselImg1 = "Image1.jpg";
+        CarouselImg2 = "Image2.jpg";
+        CarouselImg3 = "Image3.jpg";
+        CarouselImg4 = "Image4.jpg";
+        LogoImg = "Logo.png";
+        Require_Aproval = settings[0].Require_Aproval;
+
+    }
+    /// <summary>
+    /// sets the hours of the shope from the results of the controller
+    /// </summary>
+    private void SetHours()
+    {
+        MondayOpening = hours[0].Opening;
+        TuesdayOpening = hours[1].Opening;
+        WednesdayOpening = hours[2].Opening;
+        ThursdayOpening = hours[3].Opening;
+        FridayOpening = hours[4].Opening;
+        SaturdayOpening = hours[5].Opening;
+        SundayOpening = hours[6].Opening;
+        MondayClosing = hours[0].Closing;
+        TuesdayClosing = hours[1].Closing;
+        WednesdayClosing = hours[2].Closing;
+        ThursdayClosing = hours[3].Closing;
+        FridayClosing = hours[4].Closing;
+        SaturdayClosing = hours[5].Closing;
+        SundayClosing = hours[6].Closing;
+        MondayClosed = hours[0].Closed;
+        TuesdayClosed = hours[1].Closed;
+        WednesdayClosed = hours[2].Closed;
+        ThursdayClosed = hours[3].Closed;
+        FridayClosed = hours[4].Closed;
+        SaturdayClosed = hours[5].Closed;
+        SundayClosed = hours[6].Closed;
+    }
+    /// <summary>
+    /// used to update the general part of the settings, used validation
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveGeneral()
+    {
+        if (Email == "" || Address == "" || Phone_Number == 0 || Currency == "" || Company_Name == "")
+        {
+            GeneralError = "All Fileds must be filled in";
+        }
+        else
+        {
+            SettingsModel data = new SettingsModel
+            {
+                Email = Email,
+                Address = Address,
+                Phone_Number = Phone_Number,
+                Currency = Currency,
+                Company_Name = Company_Name,
+                Require_Aproval = Require_Aproval,
+                //Use Current
+                Password = settings[0].Password,
+                Email_Pass = settings[0].Email_Pass,
+                Email_Sender = settings[0].Email_Sender,
+                SmtpServer = settings[0].SmtpServer,
+                SSL = settings[0].SSL,
+                Port = settings[0].Port
+            };
+            GeneralError = "";
+            await Http.PutJsonAsync("Settings", data);
+        }
+
+
+
+    }
+    /// <summary>
+    /// save settigns to do with thte security of the system such as admin password
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveSecurity()
+    {
+        if (New_Password == "" || Re_Password == "" || Password == "")
+        {
+            SecurityError = "Fields can not be empty";
+        }
+        if (New_Password == Re_Password)
+        {
+            if (Re_Password != settings[0].Password)
+            {
+                SettingsModel data = new SettingsModel
+                {
+                    Email = settings[0].Email,
+                    Address = settings[0].Address,
+                    Phone_Number = settings[0].Phone_Number,
+                    Currency = settings[0].Currency,
+                    Company_Name = settings[0].Company_Name,
+                    Require_Aproval = settings[0].Require_Aproval,
+                    //Use Current
+                    Password = Re_Password,
+                    Email_Pass = settings[0].Email_Pass,
+                    Email_Sender = settings[0].Email_Sender,
+                    SmtpServer = settings[0].SmtpServer,
+                    SSL = settings[0].SSL,
+                    Port = settings[0].Port
+                };
+
+                await Http.PutJsonAsync("Settings", data);
+                SecurityError = "";
+            }
+            else
+            {
+                SecurityError = "Invalid Current Password";
+            }
+        }
+        else
+        {
+            SecurityError = "Passwords do not match";
+        }
+
+    }
+    /// <summary>
+    /// saves the email settings used by the system to send emails 
+    /// to both staff and clients also validates that all the cridentials are correct before saving them 
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveEmail()
+    {
+
+        var Data = new EmailTesterModel
+        {
+            To = "test@test.uk",
+            Subject = "test",
+            Body = "test",
+            HtmlBody = true,
+            Email_Sender = Email_Sender,
+            Email_Pass = Email_Pass,
+            SmtpServer = SmtpServer,
+            SSL = SSL,
+            Port = Port
+
+        };
+        ResponseModel responce = await Http.PostJsonAsync<ResponseModel>("Email/Test", Data);
+        if (responce.Status)
+        {
+            SettingsModel data = new SettingsModel
+            {
+                Email = settings[0].Email,
+                Address = settings[0].Address,
+                Phone_Number = settings[0].Phone_Number,
+                Currency = settings[0].Currency,
+                Company_Name = settings[0].Company_Name,
+                Require_Aproval = settings[0].Require_Aproval,
+                //Use Current
+                Password = settings[0].Password,
+                Email_Pass = Email_Pass,
+                Email_Sender = Email_Sender,
+                SmtpServer = SmtpServer,
+                SSL = SSL,
+                Port = Port
+            };
+
+            await Http.PutJsonAsync("Settings", data);
+            EmailError = "";
+        }
+        else
+        {
+            EmailError = "Ivalid Settings";
+        }
+    }
+    /// <summary>
+    /// used to save the working hours of the shop also uses validation to include the hours used follow a correct logic as the openning hour must be smalller than the closing hour
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveOpening()
+    {
+        if (MondayOpening >= MondayClosing || TuesdayOpening >= TuesdayClosing || WednesdayOpening >= WednesdayClosing || ThursdayOpening >= ThursdayClosing || FridayOpening >= FridayClosing || SaturdayOpening >= SaturdayClosing || SundayOpening >= SundayClosing)
+        {
+            OpeningError = "Opening Time can not be greater or equal than the Closing Time";
+        }
+        else if (MondayClosing <= MondayOpening || TuesdayClosing <= TuesdayOpening || WednesdayClosing <= WednesdayOpening || ThursdayClosing <= ThursdayOpening || FridayClosing <= FridayOpening || SaturdayClosing <= SaturdayOpening || SundayClosing <= SundayOpening)
+        {
+            OpeningError = "Closing Time can not be less or equal than the Opening Time";
+        }
+        else
+        {
+            List<OpeningModel> Data = new List<OpeningModel>();
+            Data.Add(new OpeningModel
+            {
+                Id = 0,
+                Day = "Monday",
+                Opening = MondayOpening,
+                Closing = MondayClosing,
+                Closed = MondayClosed
+            });
+            Data.Add(new OpeningModel
+            {
+                Id = 1,
+                Day = "Tuesday",
+                Opening = TuesdayOpening,
+                Closing = TuesdayClosing,
+                Closed = TuesdayClosed
+            });
+            Data.Add(new OpeningModel
+            {
+                Id = 2,
+                Day = "Wednesday",
+                Opening = WednesdayOpening,
+                Closing = WednesdayClosing,
+                Closed = WednesdayClosed
+            });
+            Data.Add(new OpeningModel
+            {
+                Id = 3,
+                Day = "Thursday",
+                Opening = ThursdayOpening,
+                Closing = ThursdayClosing,
+                Closed = ThursdayClosed
+            });
+            Data.Add(new OpeningModel
+            {
+                Id = 4,
+                Day = "Friday",
+                Opening = FridayOpening,
+                Closing = FridayClosing,
+                Closed = FridayClosed
+            });
+            Data.Add(new OpeningModel
+            {
+                Id = 5,
+                Day = "Saturday",
+                Opening = SaturdayOpening,
+                Closing = SaturdayClosing,
+                Closed = SaturdayClosed
+            });
+            Data.Add(new OpeningModel
+            {
+                Id = 6,
+                Day = "Sunday",
+                Opening = SundayOpening,
+                Closing = SundayClosing,
+                Closed = SundayClosed
+            });
+
+            await Http.PutJsonAsync("Opening", Data);
+            OpeningError = "";
+        }
+    }
+    /// <summary>
+    /// opens the image to be changed
+    /// </summary>
+    /// <param name="ImageName">the name of the image</param>
+    /// <param name="Type">type of image to be opened</param>
+    /// <returns></returns>
+    private async Task OpenImage(string ImageName,string Type)
+    {
+
+        ImageType = Type;
+        DisplayImage = await JSRuntime.InvokeAsync<string>("DisplayGetImage", Type);
+        ImageEditor = true;
+    }
+    /// <summary>
+    /// closes the image modal
+    /// </summary>
+    private void CloseImageEditor()
+    {
+        ImageEditor = false;
+    }
+    /// <summary>
+    /// opens the window to select the file
+    /// </summary>
+    private void ChangeClick()
+    {
+        JSRuntime.InvokeVoidAsync("FileInputClick");
+    }
+
+}

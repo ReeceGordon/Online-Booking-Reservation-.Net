@@ -1,0 +1,31 @@
+﻿@using Lotus.Shared
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@if (!isLoading)
+{
+    <div class="text-center mt-2">
+        <h4 class="text-white">Contact Us</h4>
+    </div>
+    <div class="mt-5 ml-3">
+        <h5><span style="color:whitesmoke">Phone Number: </span><span style="color:lightgreen">@settings[0].Phone_Number</span></h5>
+
+        <h5><span style="color:whitesmoke">Email: </span><a @onclick="NavigateEmail" href="" style="color:deepskyblue">@settings[0].Email</a></h5>
+
+        <h5><span style="color:whitesmoke">Address: </span><span style="color:lightgreen;font-weight:300;">@settings[0].Address</span></h5>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private SettingsModel[] settings;
+    protected override async Task OnInitializedAsync()
+    {
+        settings = await Http.GetJsonAsync<SettingsModel[]>("Settings/ContactDetails");
+        isLoading = false;
+    }
+    private void NavigateEmail()
+    {
+        NavigationManager.NavigateTo(uri: "mailto:"+settings[0].Email);
+    }
+}

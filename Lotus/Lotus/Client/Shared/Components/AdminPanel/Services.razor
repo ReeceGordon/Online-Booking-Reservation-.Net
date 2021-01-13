@@ -1,0 +1,747 @@
+﻿@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+
+@if (Table)
+{
+    <div style="width:50%;margin: 0 auto; text-align:center; margin-top:100px;">
+        <button class="rounded btn btn-sucess mt-1" style="width: 50%; background-color: green; color: black;" @onclick="AddCategory">Add Category</button>
+    </div>
+
+    <div style="height:400px; overflow:auto; margin-top:50px;">
+        @if (categories != null)
+        {
+            <table style="margin: 0 auto; width:40%; outline-color: black;">
+                <thead><tr> <td></td> <td></td> <td></td> <td></td> </tr></thead>
+                <tbody>
+                    @foreach (var item in categories)
+                    {
+                        string borderstyle = "border-bottom:solid black 1px";
+                        if (categories.Last().Name == item.Name)
+                        {
+                            borderstyle = "";
+                        }
+                        <tr style="@borderstyle" class="mt-1">
+                            <td style="vertical-align: middle; width:40%;"><span class="NonSelectable" id="categoryName" @onclick="() => ViewCategory(item.Id)">@item.Name</span></td>
+                            <td style="vertical-align: middle; width:5%;"><button class="btn btn-warning rounded-circle" style="margin: 0.5em" @onclick="() => UpdateCategory(item.Id, item.Name, item.Description)"><i class="fas fa-edit" style="color: black"></i></button></td>
+                            <td style="vertical-align: middle; width:5%;"><button class="btn btn-danger rounded-circle" style="margin: 0.5em" @onclick="() => DeleteCategory(item.Id, item.Name)"><i class="fas fa-minus" style="color: black"></i></button></td>
+                            <td style="vertical-align: middle; width:5%;"><button class="btn btn-success rounded-circle" style="margin: 0.5em" @onclick="() => AddService(item.Id)"><i class="fas fa-plus" style="color: black"></i></button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
+else
+{
+<div style="width:50%;margin: 0 auto; text-align:center; margin-top:100px;">
+    <button class="rounded btn" style="width: 25%; background-color: gray; color: black;" @onclick="Back2">Back</button>
+    <button class="rounded btn btn-sucess mt-1" style="width: 25%; background-color: green; color: black;" @onclick="() => AddService(ID)">Add Service</button>
+</div>
+
+    <div style="height:400px; overflow:auto; margin-top:50px;">
+
+        <table style="margin: 0 auto; width:40%; outline-color: black;">
+            <thead><tr> <td></td> <td></td> <td></td> <td></td> </tr></thead>
+            <tbody>
+                @foreach (var item in serviceslist)
+                {
+                    string price = item.Price.ToString();
+                    if (price.Contains("."))
+                    {
+                        if (price.Split(".")[1].Length == 1)
+                        {
+                            price += "0";
+                        }
+                    }
+                    string borderstyle = "border-bottom:solid black 1px";
+                    if (serviceslist.Last().Name == item.Name)
+                    {
+                        borderstyle = "";
+                    }
+                    <tr style="@borderstyle" class="mt-1">
+                        <td style="vertical-align: middle; width:20%;">@item.Name</td>
+                        <td style="vertical-align: middle; width:20%;">@settings[0].Currency @price</td>
+                        <td style="vertical-align: middle; width:5%;"><button class="btn btn-warning rounded-circle" style="margin: 0.5em" @onclick="() => UpdateService(item.Id, item.Name, item.Duration, item.Price)"><i class="fas fa-edit" style="color: black"></i></button></td>
+                        <td style="vertical-align: middle; width:5%;"><button class="btn btn-danger rounded-circle" style="margin: 0.5em" @onclick="() => DeleteService(item.Id, item.Name)"><i class="fas fa-minus" style="color: black"></i></button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    </div>
+
+}
+
+
+@if (AddCategoryBox)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 4vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        @if (!AddCategoryBoxP2)
+                        {
+                            <h5 class="modal-title NonSelectable"></h5>
+                        }
+
+                        else
+                        {
+                            <h5 class="modal-title NonSelectable">Select Staff</h5>
+                        }
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="height:400px; overflow-y:auto">
+                        @if (!AddCategoryBoxP2)
+                        {
+                            <table style="margin: 0 auto; width:40%; outline-color: black;">
+                                <thead><tr> <td></td> <td></td></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><label>Category Name</label></td>
+                                        <td><input style="width:343px" @bind="categoryName" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label>Description</label></td>
+                                        <td><textarea style="resize:none" cols="40" rows="4" @bind="categoryDescription" /></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <table style="margin: 0 auto; width:100%; outline-color: black;">
+                                <thead><tr> <td></td> <td></td> <td></td> <td></td> </tr></thead>
+                                <tbody>
+                                    @foreach (var item in staff)
+                                    {
+                                        <tr class="mt-1">
+                                            <td style="vertical-align: middle"><img class="rounded-circle NonSelectable" style="height:80px; width:80px; border:solid black 1px" src="/StaticFiles/Staff/@item.Image" /></td>
+                                            <td style="vertical-align: middle">@item.Name @item.Surname</td>
+                                            @if (privilages.Contains(item.Staff_Id))
+                                            {
+                                                <td style="vertical-align: middle; width:5%;"><button class="btn btn-danger rounded-circle" style="margin: 0.5em" @onclick="() => EditPrivilages(item.Staff_Id, true, false)"><i class="fas fa-minus" style="color: black"></i></button></td>
+                                            }
+                                            else
+                                            {
+                                                <td style="vertical-align: middle; width:5%;"><button class="btn btn-success rounded-circle" style="margin: 0.5em" @onclick="() => EditPrivilages(item.Staff_Id, true, true)"><i class="fas fa-plus" style="color: black"></i></button></td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        @if (error)
+                        {
+                            <td><label style="color:red">Make sure all fields are filled in</label></td>
+                        }
+                        @if (!AddCategoryBoxP2)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                            <button type="button" class="btn btn-success" @onclick="Next">Next</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="Back">Back</button>
+                            <button type="button" class="btn btn-success" @onclick="insertCategory">Add</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (UpdateCategoryBox)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 4vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        @if (!UpdateCategoryBox2)
+                        {
+                            <h5 class="modal-title NonSelectable"></h5>
+                        }
+
+                        else
+                        {
+                            <h5 class="modal-title NonSelectable">Select Staff</h5>
+                        }
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="height:400px; overflow-y:auto">
+                        @if (!UpdateCategoryBox2)
+                        {
+                            <table style="margin: 0 auto; width:40%; outline-color: black;">
+                                <thead><tr> <td></td> <td></td></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><label>Category Name</label></td>
+                                        <td><input style="width:343px" @bind="categoryName" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label>Description</label></td>
+                                        <td><textarea style="resize:none" cols="40" rows="4" @bind="categoryDescription" /></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <table style="margin: 0 auto; width:100%; outline-color: black;">
+                                <thead><tr> <td></td> <td></td> <td></td> <td></td> </tr></thead>
+                                <tbody>
+                                    @foreach (var item in staff)
+                                    {
+                                        <tr class="mt-1">
+                                            <td style="vertical-align: middle"><img class="rounded-circle NonSelectable" style="height:80px; width:80px; border:solid black 1px" src="/StaticFiles/Staff/@item.Image" /></td>
+                                            <td style="vertical-align: middle">@item.Name @item.Surname</td>
+                                            @if (privilages.Contains(item.Staff_Id))
+                                            {
+                                                <td style="vertical-align: middle; width:5%;"><button class="btn btn-danger rounded-circle" style="margin: 0.5em" @onclick="() => EditPrivilages(item.Staff_Id, false, false)"><i class="fas fa-minus" style="color: black"></i></button></td>
+                                            }
+                                            else
+                                            {
+                                                <td style="vertical-align: middle; width:5%;"><button class="btn btn-success rounded-circle" style="margin: 0.5em" @onclick="() => EditPrivilages(item.Staff_Id, false, true)"><i class="fas fa-plus" style="color: black"></i></button></td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        @if (error)
+                        {
+                            <td><label style="color:red">Make sure all fields are filled in</label></td>
+                        }
+                        @if (!UpdateCategoryBox2)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                            <button type="button" class="btn btn-success" @onclick="Next">Next</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="Back">Back</button>
+                            <button type="button" class="btn btn-success" @onclick="SaveCategory">Save</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (DelCategoryBox)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 4vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h4>Are you sure you want to delete the @Name category?</h4>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                        <button type="button" class="btn btn-success" @onclick="Delete">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (DelServiceBox)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 4vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h4>Are you sure you want to delete the @Name service?</h4>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                        <button type="button" class="btn btn-success" @onclick="RemoveService">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (AddServiceBox)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 4vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title NonSelectable"></h5>
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <table style="margin: 0 auto; width:40%; outline-color: black;">
+                            <thead><tr> <td></td> <td></td></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><label>Service Name</label></td>
+                                    <td><input @bind="serviceName" /></td>
+                                </tr>
+                                <tr>
+                                    <td><label>Duration</label></td>
+                                    <td><input type="number" min="30" max="1000" step="30" @bind="serviceDuration" /></td>
+                                </tr>
+                                <tr>
+                                    <td><label>Price</label></td>
+                                    <td>@settings[0].Currency<input id="priceinput" type="number" min="0.00" max="1000.00" step="0.01" value="0.00" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        @if (error)
+                        {
+                            <td><label style="color:red">Make sure all fields are filled in</label></td>
+                        }
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                        <button type="button" class="btn btn-success" @onclick="insertService">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (UpdateServiceBox)
+{
+    <div class="modal fade show" id="myModal" style="display:block;" aria-modal="true" role="dialog">
+        <div class="vertical-alignment-helper" style="margin-left: 4vw;">
+            <div class="modal-dialog vertical-align-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title NonSelectable"></h5>
+                        <button type="button" style="outline:none" class="close NonSelectable" aria-label="Close" @onclick="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <table style="margin: 0 auto; width:40%; outline-color: black;">
+                            <thead><tr> <td></td> <td></td></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><label>Service Name</label></td>
+                                    <td><input @bind="serviceName" /></td>
+                                </tr>
+                                <tr>
+                                    <td><label>Duration</label></td>
+                                    <td><input type="number" min="30" max="1000" step="30" @bind="serviceDuration" /></td>
+                                </tr>
+                                <tr>
+                                    <td><label>Price</label></td>
+                                    <td>@settings[0].Currency<input id="priceinput" type="number" min="0.00" max="1000.00" step="0.01" value="@servicePrice" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        @if (error)
+                        {
+                            <td><label style="color:red">Make sure all fields are filled in</label></td>
+                        }
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                        <button type="button" class="btn btn-success" @onclick="SaveServices">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+
+    List<string> privilages = new List<string>();
+    CategoriesModel[] categories;
+    StaffModel[] staff;
+    ServiceModel[] serviceslist;
+    SettingsModel[] settings;
+    bool AddCategoryBox = false;
+    bool AddCategoryBoxP2 = false;
+    bool DelCategoryBox = false;
+    bool DelServiceBox = false;
+    bool AddServiceBox = false;
+    bool UpdateServiceBox = false;
+    bool UpdateCategoryBox = false;
+    bool UpdateCategoryBox2 = false;
+    bool Table = true;
+    bool error = false;
+    string categoryName;
+    string categoryDescription;
+    string serviceName;
+    int serviceDuration = 30;
+    double servicePrice = 0;
+    string ID;
+    int ServiceID;
+    string Name;
+
+
+    /// <summary>
+    /// Retrieves data from category and services databases on initialisation of page
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await Http.GetJsonAsync<CategoriesModel[]>("Categories");
+        settings = await Http.GetJsonAsync<SettingsModel[]>("Settings");
+    }
+
+    /// <summary>
+    /// changes table to display the list of services for the category chosen
+    /// </summary>
+    /// <param name="id">category id of the category chosen</param>
+    protected async Task ViewCategory(string id)
+    {
+        ID = id;
+        serviceslist = await Http.GetJsonAsync<ServiceModel[]>($"Service/{id}");
+        Table = false;
+    }
+
+    /// <summary>
+    /// Opens popup box for adding new categories
+    /// </summary>
+    private void AddCategory()
+    {
+        privilages.Clear();
+        AddCategoryBox = true;
+    }
+
+    /// <summary>
+    /// inserts the new category into the database 
+    /// </summary>
+    protected async Task insertCategory()
+    {
+        string id = Id_Generator.Generate(16);
+        CategoriesModel newCategory = new CategoriesModel
+        {
+            Id = id,
+            Name = categoryName,
+            Description = categoryDescription
+        };
+
+        await Http.PostJsonAsync("Categories", newCategory);
+        categories = await Http.GetJsonAsync<CategoriesModel[]>("Categories");
+
+        if (privilages.Count != 0)
+        {
+            foreach (var item in privilages)
+            {
+                StaffAssignmentModel SA = new StaffAssignmentModel
+                {
+                    Category_Id = id,
+                    Staff_Id = item
+                };
+
+                await Http.PostJsonAsync("StaffAssignment", SA);
+            }
+        }
+
+        Close();
+    }
+
+    /// <summary>
+    /// Closes popup boxes 
+    /// </summary>
+    private void Close()
+    {
+        AddCategoryBox = false;
+        AddCategoryBoxP2 = false;
+        UpdateCategoryBox = false;
+        UpdateCategoryBox2 = false;
+        DelCategoryBox = false;
+        DelServiceBox = false;
+        AddServiceBox = false;
+        UpdateServiceBox = false;
+        categoryName = "";
+        categoryDescription = "";
+        serviceName = "";
+        serviceDuration = 30;
+        servicePrice = 0;
+        error = false;
+    }
+
+    /// <summary>
+    /// Moves to the next page of the popup box to choose staff to assign for the category
+    /// </summary>
+    protected async Task Next()
+    {
+        if (string.IsNullOrEmpty(categoryName) || string.IsNullOrEmpty(categoryDescription))
+        {
+            error = true;
+        }
+
+        else
+        {
+            error = false;
+            staff = await Http.GetJsonAsync<StaffModel[]>("Staff");
+
+            if (AddCategoryBox)
+            {
+
+                AddCategoryBoxP2 = true;
+            }
+
+            else
+            {
+                await GetPrivalages();
+                UpdateCategoryBox2 = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// gets staff that are assigned to the category being looked at
+    /// </summary>
+    private async Task GetPrivalages()
+    {
+        privilages.Clear();
+        StaffAssignmentModel[] temp = await Http.GetJsonAsync<StaffAssignmentModel[]>($"StaffAssignment/GetByCategoryId/{ID}");
+        foreach (var item in temp)
+        {
+            privilages.Add(item.Staff_Id);
+        }
+    }
+
+    /// <summary>
+    /// Goes back to first page of popup box for choosing details of the category
+    /// </summary>
+    private void Back()
+    {
+        AddCategoryBoxP2 = false;
+        UpdateCategoryBox2 = false;
+    }
+
+    /// <summary>
+    /// Goes back to displaying table of categories from table of services
+    /// </summary>
+    private void Back2()
+    {
+        Table = true;
+    }
+
+    /// <summary>
+    /// Opens popup box for editing an existing category
+    /// </summary>
+    /// <param name="id">id of the category to add</param>
+    /// <param name="name">name of the category to add</param>
+    /// <param name="description">description of the category to add</param>
+    private void UpdateCategory(string id, string name, string description)
+    {
+        ID = id;
+        categoryName = name;
+        categoryDescription = description;
+        UpdateCategoryBox = true;
+    }
+
+    /// <summary>
+    /// changes details of an existing category in the database to the new details given
+    /// </summary>
+    private async Task SaveCategory()
+    {
+        var data = new CategoriesModel
+        {
+            Id = ID,
+            Name = categoryName,
+            Description = categoryDescription
+        };
+        await Http.PutJsonAsync("Categories", data);
+        categories = await Http.GetJsonAsync<CategoriesModel[]>("Categories");
+        Close();
+    }
+
+    /// <summary>
+    /// Opens popup box for editing an existing service
+    /// </summary>
+    /// <param name="id">id of the service to update</param>
+    /// <param name="name">name of the service to update</param>
+    /// <param name="duration">duration of the service to update</param>
+    /// <param name="price">price of the service to update</param>
+    private void UpdateService(int id, string name, int duration, double price)
+    {
+        ServiceID = id;
+        serviceName = name;
+        serviceDuration = duration;
+        servicePrice = price;
+        UpdateServiceBox = true;
+    }
+
+    /// <summary>
+    /// changes details of an existing service in the database to the new details given
+    /// </summary>
+    private async Task SaveServices()
+    {
+        servicePrice = Convert.ToDouble(await JSRuntime.InvokeAsync<string>("GetText", "priceinput"));
+
+        if (string.IsNullOrEmpty(serviceName))
+        {
+            error = true;
+        }
+
+        else
+        {
+            var data = new ServiceModel
+            {
+                Id = ServiceID,
+                Name = serviceName,
+                Duration = serviceDuration,
+                Price = Convert.ToDouble(await JSRuntime.InvokeAsync<string>("GetText", "priceinput"))
+            };
+
+            await Http.PutJsonAsync("Service", data);
+            serviceslist = await Http.GetJsonAsync<ServiceModel[]>($"Service/{ID}");
+            error = false;
+            Close();
+        }
+    }
+
+    /// <summary>
+    /// opens popup box for deleting categories
+    /// </summary>
+    /// <param name="id">id of category to delete</param>
+    /// <param name="name">name of category to delete</param>
+    private void DeleteCategory(string id, string name)
+    {
+        ID = id;
+        Name = name;
+        DelCategoryBox = true;
+    }
+
+    /// <summary>
+    /// removes the chosen category from the database and all services attached to it
+    /// </summary>
+    protected async Task Delete()
+    {
+        await Http.DeleteAsync($"Categories/{ID}");
+        await Http.DeleteAsync($"StaffAssignment/DeleteAll/{ID}");
+        await Http.DeleteAsync($"Service/DeleteAll/{ID}");
+        categories = await Http.GetJsonAsync<CategoriesModel[]>("Categories");
+        Close();
+    }
+
+    /// <summary>
+    /// opens popup box for deleting services
+    /// </summary>
+    /// <param name="id">id of service to delete</param>
+    /// <param name="name">name of service to delete</param>
+    private void DeleteService(int id, string name)
+    {
+
+        ServiceID = id;
+        Name = name;
+        DelServiceBox = true;
+    }
+
+    /// <summary>
+    /// removes the chosen service from the database
+    /// </summary>
+    protected async Task RemoveService()
+    {
+        await Http.DeleteAsync($"Service/{ServiceID}");
+        serviceslist = await Http.GetJsonAsync<ServiceModel[]>($"Service/{ID}");
+        Close();
+    }
+
+    /// <summary>
+    /// opens popup box for adding new services
+    /// </summary>
+    private void AddService(string id)
+    {
+        ID = id;
+        AddServiceBox = true;
+    }
+
+    /// <summary>
+    /// inserts the new service into the database 
+    /// </summary>
+    protected async Task insertService()
+    {
+
+        servicePrice = Convert.ToDouble(await JSRuntime.InvokeAsync<string>("GetText", "priceinput"));
+
+        if (string.IsNullOrEmpty(serviceName))
+        {
+            error = true;
+        }
+
+        else
+        {
+            ServiceModel service = new ServiceModel
+            {
+                Category_Id = ID,
+                Name = serviceName,
+                Duration = serviceDuration,
+                Price = Convert.ToDouble(await JSRuntime.InvokeAsync<string>("GetText", "priceinput"))
+            };
+
+            await Http.PostJsonAsync("Service", service);
+            error = false;
+            Close();
+            serviceslist = await Http.GetJsonAsync<ServiceModel[]>($"Service/{ID}");
+        }
+    }
+
+    /// <summary>
+    /// changes if a staff member is assigned to a category or not  
+    /// </summary>
+    /// <param name="staffID">id of staff member</param>
+    /// <param name="newMode">checks if staff is being assigned to new category or an existing one</param>
+    /// <param name="createOption">bool checking if a staff is assigned to category or not</param>
+    protected async Task EditPrivilages(string staffID, bool newMode, bool createOption)
+    {
+        if (newMode)
+        {
+            if (createOption)
+            {
+                privilages.Add(staffID);
+            }
+
+            else
+            {
+                privilages.Remove(staffID);
+            }
+        }
+
+        else
+        {
+            if (createOption)
+            {
+                var data = new StaffAssignmentModel
+                {
+                    Staff_Id = staffID,
+                    Category_Id = ID
+                };
+                await Http.PostJsonAsync("StaffAssignment", data);
+            }
+
+            else
+            {
+                await Http.DeleteAsync($"StaffAssignment/{staffID}/{ID}");
+            }
+
+            await GetPrivalages();
+        }
+    }
+
+}

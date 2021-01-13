@@ -1,0 +1,64 @@
+﻿@using Lotus.Shared
+@using Lotus.Client.Shared.Components.Home
+@inject HttpClient Http
+
+@inject IJSRuntime JSRuntime
+
+
+<div id="carouselExampleIndicators" style="width:100vw" class="carousel slide carousel-fade" data-ride="carousel" data-delay="3000" data-pause="false">
+    <div class="rounded text-center" id="loginRegBox">
+        @if (string.IsNullOrEmpty(cName) && (string.IsNullOrEmpty(tempPass)))
+        {
+            <Authentication />
+        }
+        else if (tempPass != null)
+        {
+        <Authentication tPass="@tempPass" />
+        }
+        else
+        {
+        <Authentication aName="@cName" />
+        }
+    </div>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img class="d-block w-100 carouselImages" src="/StaticFiles/Carousel/Image1.jpg" style="height: 60vh;" alt="Image1">
+        </div>
+        <div class="carousel-item">
+            <img class="d-block w-100 carouselImages" src="/StaticFiles/Carousel/Image2.jpg" style="height:60vh;" alt="Image2">
+        </div>
+        <div class="carousel-item">
+            <img class="d-block w-100 carouselImages" src="/StaticFiles/Carousel/Image3.jpg" style="height: 60vh;" alt="Image3">
+        </div>
+        <div class="carousel-item">
+            <img class="d-block w-100 carouselImages" src="/StaticFiles/Carousel/Image4.jpg" style="height:60vh;" alt="Image4">
+        </div>
+    </div>
+
+</div>
+
+
+
+@code {
+    [Parameter]
+    public string cName { get; set; }
+
+    [Parameter]
+    public string tempPass { get; set; }
+
+    bool firstRender = true;
+    /// <summary>
+    /// once the site is rendered stat the carousel automation
+    /// </summary>
+    /// <param name="firstRender">to identify if its the first rendering of the site</param>
+    /// <returns></returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.Delay(1000);
+        if (firstRender)
+        {
+            await JSRuntime.InvokeAsync<object>("initializeCarousel");
+        }
+    }
+}
+

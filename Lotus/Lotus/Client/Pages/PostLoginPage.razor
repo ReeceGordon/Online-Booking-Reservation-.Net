@@ -1,0 +1,360 @@
+﻿@page "/RoleManagement"
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject HttpClient Http
+@using Lotus.Shared.Identity
+@attribute [Authorize(Roles = "Admin")]
+
+
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="col-md-12">
+            <h1 class="display-1 text-white">System Role Management</h1>
+            <button class="btn btn-outline-danger" type="button" @onclick="GoToAdminPanel">Back to Admin Panel</button>
+            <h1 class="text-white">Create New Role</h1>
+            <EditForm Model="CreateRoleModel" OnValidSubmit="HandleRoleRegistration">
+                <DataAnnotationsValidator />
+
+
+                <div class="form-group row">
+                    <div class="col-md-12">
+                        <InputText placeholder="Enter New Role Name" Id="rolename" class="form-control" @bind-Value="CreateRoleModel.RoleName" />
+                        <ValidationMessage For="@(() => CreateRoleModel.RoleName)" />
+                        <button type="submit" class="btn btn-success mt-2 mb-4 w-100">Register Role</button>
+                    </div>
+                </div>
+
+            </EditForm>
+
+            @if (displaySuccess)
+            {
+                <div style="color:white">SUCCESS IT WAS ADDED!</div>
+            }
+            @if (ShowErrors)
+            {
+                <div style="color:red">USER ALREADY EXISTS!</div>
+            }
+
+            <h1 class="text-white">Currently Selected Role</h1>
+            @if (eRole == null)
+            {
+                <div id="topAnchor" class="card mb-1">
+                    <div class="card-header">NO ROLE | SELECTED</div>
+                    <div class="card-body">
+                        <p style="color:@uMsgColor">@resultRoleCheck</p>
+
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-secondary">Add Users</button>
+                        <button class="btn btn-secondary">Remove Users</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var currentID = @eRole.Id;
+                <div class="card mb-1">
+                    <div class="card-header"><span style="color: #2c3536!important" class="font-weight-bold">ROLENAME:</span> <span class="font-italic"> @eRole.RoleName </span>| <span style="color: #2c3536!important" class="font-weight-bold">ID:</span> <span class="font-italic"> @eRole.Id </span></div>
+                    <div class="card-body">
+
+                        <div class="input-group mb-3">
+                            <input type="text" @bind="newRoleName" class="form-control" placeholder="Enter New Role Name" aria-label="Enter New Role Name Input Area" aria-describedby="basic-addon2">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" @onclick="(()=>UpdateRole(currentID, newRoleName))">Update Role</button>
+                            </div>
+                        </div>
+                        <p style="color:@uMsgColor">@resultRoleCheck</p>
+
+
+                        <div class="card">
+                            <div class="card-header">Users in this role</div>
+                            <div class="card-body pb-0">
+
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">User Name</th>
+                                            <th scope="col">User ID</th>
+                                            <th scope="col">In Role?</th>
+                                            <th scope="col">Toggle in Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        @if (usersInRoles != null)
+                                        {
+                                            int i = 0;
+                                            foreach (var user in usersInRoles)
+                                            {
+                                                var iteID = "inRoleCheck" + i;
+                                                <tr>
+                                                    <th scope="row">@(i + 1)</th>
+                                                    <td>@user.UserName</td>
+                                                    <td>@user.UserId</td>
+                                                    <td>@user.IsSelected</td>
+                                                    <td>
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input" id="@iteID" @bind="user.IsSelected">
+                                                            <label class="form-check-label" for="@iteID">Click to Toggle</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                                i++;
+                                            }
+
+                                        }
+                                        else
+                                        {
+                                            int i = 0;
+                                            foreach (var user in eRole.Users)
+                                            {
+                                                var iteID = "inRoleCheck" + i;
+                                                <tr>
+                                                    <th scope="row">@(i + 1)</th>
+                                                    <td>@user.UserName</td>
+                                                    <td>@user.UserId</td>
+                                                    <td>@user.IsSelected</td>
+                                                    <td>
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input" id="@iteID" @bind="user.IsSelected">
+                                                            <label class="form-check-label" for="@iteID">Click to Toggle</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                                i++;
+                                            }
+                                        }
+
+                                    </tbody>
+                                </table>
+
+
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-success" @onclick="(()=>GetUsersInRole(currentID))">Load All Users</button>
+                                @if (usersInRoles != null)
+                                {
+                                    <button class="btn btn-primary" @onclick="(()=>UpdateUsersInRole(usersInRoles, currentID))">Update Users</button>
+                                }
+                                else
+                                {
+                                    if (!eRole.Users.Any()) //If no users then button doesn't work
+                                    {
+                                        <button class="btn btn-secondary">Update Users</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-primary" @onclick="(()=>UpdateUsersInRole(eRole.Users, currentID))">Update Users</button>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <p class="text-danger">@eRoleDisplayMsg</p>
+
+                    </div>
+                </div>
+            }
+
+            <h1 class="text-white">Retreive All Current Roles</h1>
+            <button @onclick="GetAllRoles" class="btn btn-success w-100 mb-2">Show All Roles</button>
+
+            @if (newRoles != null)
+            {
+                foreach (var role in newRoles)
+                {
+                    var cID = role.id;
+
+                    <div class="card mb-1">
+                        <div class="card-header">Role-ID: @role.id</div>
+                        <div class="card-body">Role-Name: @role.name</div>
+                        <div class="card-footer">
+                            <button class="btn btn-primary" @onclick="() => EditRole(cID)">Select Role</button>
+                            <button class="btn btn-danger" @onclick="() => DelRole(cID)">Delete Role</button>
+                        </div>
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
+
+    <div class="row no-gutters">
+        <p class="text-white">@roleLoadedStatus</p>
+    </div>
+</div>
+
+
+
+
+@code {
+    private ApplicationUser testUser;
+
+    private CreateRoleModel CreateRoleModel = new CreateRoleModel();
+    private bool ShowErrors;
+    private IEnumerable<string> Errors;
+
+    private string currentUser = "null";
+
+    private string CurrentUserID = "DEFAULT-ID";
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserID = await Http.GetStringAsync("api/Accounts/Grab_ID");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //Called after each time component is rendered, useful for future reference
+        //await EditRole("681cce82-ea1f-41d2-badb-0c5961529dd2"); //Call 'Staff' role after first render.
+    }
+
+    protected void GoToAdminPanel()
+    {
+        NavigationManager.NavigateTo("AdminPanel");
+    }
+
+
+    bool displaySuccess;
+    private async Task HandleRoleRegistration()
+    {
+        ShowErrors = false;
+
+        var result = await AuthService.RegisterRole(CreateRoleModel);
+
+        if (result.Successful)
+        {
+            //NavigationManager.NavigateTo("/", true);
+            displaySuccess = true;
+            await GetAllRoles();
+        }
+        else
+        {
+            displaySuccess = false;
+            Errors = result.Errors;
+            ShowErrors = true;
+        }
+    }
+
+
+    string roleLoadedStatus = "No Roles Loaded Currently.";
+    private List<RoleListModel> newRoles;
+    private async Task GetAllRoles()
+    {
+        newRoles = await Http.GetJsonAsync<List<RoleListModel>>("api/Admin/ListRoles");
+
+        displaySuccess = false;
+        ShowErrors = false;
+        eRole = null;
+        roleLoadedStatus = "";
+    }
+
+    EditRoleModel eRole;
+    bool displayEditRole;
+    string eRoleDisplayMsg = "";
+
+    private async Task EditRole(string roleID)
+    {
+        NavigationManager.NavigateTo("RoleManagement#topAnchor");
+        Console.WriteLine("-------EditRoleCall parameter: " + roleID);
+        eRole = await Http.GetJsonAsync<EditRoleModel>("api/Admin/EditRole/" + roleID);
+        usersInRoles = null;
+
+        await JSRuntime.InvokeVoidAsync("displayModal");
+
+        displayEditRole = true;
+        resultRoleCheck = "";
+
+        if (!eRole.Users.Any())
+        {
+            eRoleDisplayMsg = "There are no users in this role, please load All Users to add new users.";
+        }
+        else
+        {
+            eRoleDisplayMsg = "";
+            //usersInRoles = eRole.Users;
+        }
+    }
+
+    private async Task showEditModal()
+    {
+        await JSRuntime.InvokeVoidAsync("displayModal");
+    }
+
+
+    string newRoleName = "";
+    string resultRoleCheck = "";
+    bool doesRoleNameExist = false;
+    private string uMsgColor = "green";
+
+    [Parameter]
+    public bool updateRoleCheck { get; set; }
+
+    private async Task UpdateRole(string roleID, string newRoleName)
+    {
+        Console.WriteLine("-------UpdateRoleCall parameter: " + roleID);
+        EditRoleModel newRole = new EditRoleModel { Id = roleID, RoleName = newRoleName };
+
+
+        if (newRoles != null)
+        {
+            foreach (var role in newRoles)
+            {
+                if (newRoleName == role.name)
+                {
+                    doesRoleNameExist = true;
+                    Console.WriteLine("Role with same name found.");
+                    Console.WriteLine(newRoleName + " | " + role.name);
+                    this.StateHasChanged();
+                    uMsgColor = "red";
+                }
+            }
+        }
+
+        await GetAllRoles();
+
+        if (doesRoleNameExist)
+        {
+            resultRoleCheck = "Role with that name already exists.";
+        }
+        else
+        {
+            await Http.PostJsonAsync("api/Admin/PostRole", newRole);
+            resultRoleCheck = "Successfully updated role!";
+        }
+        updateRoleCheck = true;
+    }
+
+
+    private async Task DelRole(string roleID)
+    {
+        await Http.DeleteAsync("api/Admin/DelRole/" + roleID);
+
+
+        await GetAllRoles();
+    }
+
+    private List<UserRoleModel> usersInRoles;
+    private async Task GetUsersInRole(string roleID)
+    {
+        usersInRoles = await Http.GetJsonAsync<List<UserRoleModel>>("api/Admin/GetUsersInRole/" + roleID);
+        //Will return all users with boolean check isSelected, if isSelected is true then user is in role
+        //else user is not in role
+
+    }
+
+    private async Task UpdateUsersInRole(List<UserRoleModel> model, string roleID)
+    {
+        Console.WriteLine("-------UpdateUsersInRoleCall parameter: " + roleID);
+        Console.WriteLine("Model Size:" + model.Count());
+        await Http.PostJsonAsync("api/Admin/EditUsersInRole/" + roleID, model);
+        await EditRole(roleID);
+    }
+
+
+}

@@ -1,0 +1,92 @@
+﻿@page "/AccountVerification"
+@using Lotus.Client.Shared.Tools
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+@using Lotus.Shared.Identity
+
+<AuthorizeView Roles="Admin, Staff, User">
+    <Authorized>
+        <h1 class="text-white">Hello, @context.User.Identity.Name!</h1>
+        <br />
+        <h3 class="text-white">Account Verification in progress.</h3>
+        <br />
+        <p class="text-white">If you aren't redirected back after the next 30 seconds, please <a href="/">click here</a> to try again.</p>
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-white">Authentication Failure!</h1>
+        <br />
+        <p class="text-white">Malicious login attempt logged.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    [Parameter]
+    public ClaimsPrincipal user { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await authenticationStateTask).User;
+
+        if (user.IsInRole("Admin"))
+        {
+            Console.WriteLine("A Admin logged in.");
+            NavigationManager.NavigateTo("AdminPanel"); //AdminPanel
+        }
+        else if (user.IsInRole("Staff"))
+        {
+            Console.WriteLine("A Staff logged in.");
+            NavigationManager.NavigateTo("StaffPanel"); //StaffPanel
+        }
+        else if (user.IsInRole("User"))
+        {
+            Console.WriteLine("A User logged in.");
+
+            //Check if User is already in Paddy's member table and grabs them if they are
+            MembersModel[] sglMember;
+            var tempID = await Http.GetStringAsync("api/Accounts/Grab_ID");
+            sglMember = await Http.GetJsonAsync<MembersModel[]>("Members/Get/" + tempID);
+
+            if (sglMember == null || sglMember.Length == 0)
+            {
+                //Grabbing Identity user details for Paddy's member table
+                MembersModel member = new MembersModel
+                {
+                    Member_Id = await Http.GetStringAsync("api/Accounts/Grab_ID"),
+                    Name = await Http.GetStringAsync("api/Accounts/Grab_FNAME"),
+                    Surname = await Http.GetStringAsync("api/Accounts/Grab_LNAME"),
+                    Email = await Http.GetStringAsync("api/Accounts/Grab_EMAIL"),
+                    Notes = "",
+                    Phone_Number = Convert.ToInt64(await Http.GetStringAsync("api/Accounts/Grab_MOBILE"))
+
+                };
+
+                ResponseModel response = await Http.PostJsonAsync<ResponseModel>("Members", member);
+
+                if (response.Status)
+                {
+                    NavigationManager.NavigateTo("MembersPanel"); //MembersPanel
+                }
+                else
+                {
+                    Console.WriteLine("Error posting Member details to Paddy's member table.");
+                }
+            }
+            else
+            {
+                //User already exists in table.
+                NavigationManager.NavigateTo("MembersPanel"); //MembersPanel
+            }
+        }
+        else
+        {
+            Console.WriteLine("An UNKNOWN logged in.");
+        }
+    }
+
+}

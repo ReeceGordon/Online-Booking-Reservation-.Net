@@ -1,0 +1,41 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.IO
+@using DataJuggler.Blazor.FileUpload
+@using Lotus.Shared
+@using Lotus.Client.Shared.Tools
+@using System.Drawing
+@using System.Drawing.Imaging
+@using BlazorInputFile
+
+    <div class="ml-4">
+        <table class="mt-5 ml-2">
+            <tr>
+                <td><h1 class="NonSelectable display-1 text-danger">Warning</h1></td>
+            </tr>
+            <tr>
+                <td><h2 class="NonSelectable text-danger">Only proceed and modify settings within role management if you have been instructed to do so or understand exactly what you're doing. Incorrect modification may corrupt your system.</h2></td>
+            </tr>
+            <tr>
+                <td><button class="btn btn-outline-danger" type="button" @onclick="GoToRoles">Go To Role Management</button></td>
+            </tr>
+        </table>
+        <hr />
+    </div>
+
+@code {
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    private void GoToRoles()
+    {
+        NavigationManager.NavigateTo("RoleManagement");
+    }
+
+
+   }

@@ -1,0 +1,528 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using Lotus.Shared
+@using System.Globalization;
+
+
+@if (!isLoading)
+{
+
+
+        <div class=" mt-1 rounded-top" style="width:100%;margin:0 auto;background:rgb(82, 82, 82);border: solid black 1px;">
+            <button class="mt-2 mb-2 ml-2 rounded NonSelectable btn btn-outline-primary" @onclick="Today">Today</button>
+            <input type="text" class=" mt-2 mb-2 ml-2 datetimepicker-input NonSelectable" id="datetimepickermonth" data-toggle="datetimepicker" @onblur="GoToDate" data-target="#datetimepickermonth" />
+            <button class=" mt-2 mb-2 ml-2 mr-2 rounded NonSelectable btn btn-outline-light" style="float:right;" @onclick="Next"><i class="fas fa-chevron-right"></i></button>
+            <button class="mt-2 mb-2 rounded NonSelectable btn btn-outline-light" @onclick="Previous" style="float:right;"><i class="fas fa-chevron-left"></i></button>
+        </div>
+
+        <table class="NonSelectable" style="width:100%;margin:0 auto;border: solid black 1px;border-top:none;text-align:center;table-layout: fixed;">
+            <tr style="background:grey;" class="mt-2 mb-2">
+                <th style="border-right:solid black 1px;color: white;">Monday</th>
+                <th style="border-right:solid black 1px;color: white;">Tuesday</th>
+                <th style="border-right:solid black 1px;color: white;">Wednesday</th>
+                <th style="border-right:solid black 1px;color: white;">Thursday</th>
+                <th style="border-right:solid black 1px;color: white;">Friday</th>
+                <th style="border-right:solid black 1px;color: white;">Saturday</th>
+                <th style="color: white;">Sunday</th>
+            </tr>
+        </table>
+        <table class="NonSelectable" style="width: 100%;margin: 0 auto;border: solid black 1px;border-top: none;table-layout: fixed;background: whitesmoke;">
+            <tr style="height:70px;">
+                @for (int i = 0; i <= 6; i++)
+                {
+                    DateTime dateValue = DateTime.ParseExact(CalendarDays[i], "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    string Day = dateValue.DayOfWeek.ToString();
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+                    if (DisabledDaysList.Contains(Day) || (dateValue < date && CalendarDays[i] != date.ToString("dd/MM/yyyy")))
+                    {
+                        <td valign="top" style="cursor:not-allowed;border:solid black 1px;background:#eda4a4;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                    else
+                    {
+                        <td @onclick="() => SelectDate(dateValue)" valign="top" style="cursor:pointer;border:solid black 1px;background:@bgcolor;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+
+                }
+            </tr>
+            <tr style="height:70px;">
+                @for (int i = 7; i <= 13; i++)
+                {
+                    DateTime dateValue = DateTime.ParseExact(CalendarDays[i], "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    string Day = dateValue.DayOfWeek.ToString();
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+                    if (DisabledDaysList.Contains(Day) || (dateValue < date && CalendarDays[i] != date.ToString("dd/MM/yyyy")))
+                    {
+                        <td valign="top" style="cursor:not-allowed;border:solid black 1px;background:#eda4a4;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                    else
+                    {
+                        <td @onclick="() => SelectDate(dateValue)" valign="top" style="cursor:pointer;border:solid black 1px;background:@bgcolor;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                }
+            </tr>
+            <tr style="height:70px;">
+                @for (int i = 14; i <= 20; i++)
+                {
+                    DateTime dateValue = DateTime.ParseExact(CalendarDays[i], "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    string Day = dateValue.DayOfWeek.ToString();
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+                    if (DisabledDaysList.Contains(Day) || (dateValue < date && CalendarDays[i] != date.ToString("dd/MM/yyyy")))
+                    {
+                        <td valign="top" style="cursor:not-allowed;border:solid black 1px;background:#eda4a4;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                    else
+                    {
+                        <td @onclick="() => SelectDate(dateValue)" valign="top" style="cursor:pointer;border:solid black 1px;background:@bgcolor;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                }
+            </tr>
+            <tr style="height:70px;">
+                @for (int i = 21; i <= 27; i++)
+                {
+                    DateTime dateValue = DateTime.ParseExact(CalendarDays[i], "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    string Day = dateValue.DayOfWeek.ToString();
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+                    if (DisabledDaysList.Contains(Day) || (dateValue < date && CalendarDays[i] != date.ToString("dd/MM/yyyy")))
+                    {
+                        <td valign="top" style="cursor:not-allowed;border:solid black 1px;background:#eda4a4;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                    else
+                    {
+                        <td @onclick="() => SelectDate(dateValue)" valign="top" style="cursor:pointer;border:solid black 1px;background:@bgcolor;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                }
+            </tr>
+            <tr style="height:70px;">
+                @for (int i = 28; i <= 34; i++)
+                {
+                    DateTime dateValue = DateTime.ParseExact(CalendarDays[i], "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    string Day = dateValue.DayOfWeek.ToString();
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+                    if (DisabledDaysList.Contains(Day) || (dateValue < date && CalendarDays[i] != date.ToString("dd/MM/yyyy")))
+                    {
+                        <td valign="top" style="cursor:not-allowed;border:solid black 1px;background:#eda4a4;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                    else
+                    {
+                        <td @onclick="() => SelectDate(dateValue)" valign="top" style="cursor:pointer;border:solid black 1px;background:@bgcolor;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                }
+            </tr>
+            <tr style="height:70px;">
+                @for (int i = 35; i <= 41; i++)
+                {
+                    DateTime dateValue = DateTime.ParseExact(CalendarDays[i], "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    string Day = dateValue.DayOfWeek.ToString();
+                    string bgcolor = "whitesmoke";
+                    string textColor = "black";
+                    if (@CalendarDays[i].Split("/")[1] != @curMonth)
+                    {
+                        bgcolor = "rgba(161, 160, 160, 0.8)";
+                        textColor = "grey";
+                    }
+                    if (DisabledDaysList.Contains(Day) || (dateValue < date && CalendarDays[i] != date.ToString("dd/MM/yyyy")))
+                    {
+                        <td valign="top" style="cursor:not-allowed;border:solid black 1px;background:#eda4a4;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                    else
+                    {
+                        <td @onclick="() => SelectDate(dateValue)" valign="top" style="cursor:pointer;border:solid black 1px;background:@bgcolor;">
+
+                            @if (ShowCurrMonth && IndexOfToday == i)
+                            {
+
+                                <label class="ml-1 DayHeading" style="color:red;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+                            else
+                            {
+                                <label class="ml-1 DayHeading" style="color:@textColor;">@Convert.ToInt16(@CalendarDays[i].Split("/")[0])</label>
+                            }
+
+                        </td>
+                    }
+                }
+            </tr>
+        </table>
+    }
+
+
+
+
+
+@code {
+    [Parameter] public EventCallback<string> onSelected { get; set; }
+    int IndexOfToday = 0;
+    DateTime CurrentDate;
+    string curMonth, DisplayDate = "";
+    bool ShowCurrMonth, isLoading = true;
+    DateTime date = DateTime.Now;
+    OpeningModel[] ShopDays;
+    List<string> DisabledDaysList = new List<string>();
+    string[] Days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    List<string> CalendarDays = new List<string>();
+    System.Threading.Timer timer;
+    /// <summary>
+    /// when the page is being initialized to get the shops opening hours
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        ShopDays = await Http.GetJsonAsync<OpeningModel[]>("Opening");
+        DisableDays();
+        SetCalendar();
+        isLoading = false;
+        var startTimeSpan = TimeSpan.Zero;
+        var periodTimeSpan = TimeSpan.FromMilliseconds(500);
+        timer = new System.Threading.Timer(async (e) =>
+        {
+            await CheckRendering();
+        }, null, startTimeSpan, periodTimeSpan);
+    }
+    /// <summary>
+    /// Checks to see if the calendar widget is rendered if it is to initialize it
+    /// </summary>
+    /// <returns></returns>
+    protected async Task CheckRendering()
+    {
+
+        if (await JSRuntime.InvokeAsync<bool>("checkRendering", "datetimepickermonth"))
+        {
+            await initializeCalendar();
+            await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+            timer.Dispose();
+        }
+
+
+
+    }
+
+    /// <summary>
+    /// creates a list of days the shop is closed
+    /// </summary>
+    private void DisableDays()
+    {
+        foreach(var day in ShopDays)
+        {
+            if(day.Closed)
+            {
+                DisabledDaysList.Add(day.Day.Trim());
+            }
+        }
+    }
+    /// <summary>
+    /// intitializes the navigation calendar
+    /// </summary>
+    /// <returns></returns>
+    private async Task initializeCalendar()
+    {
+
+        await JSRuntime.InvokeVoidAsync("SetCalendarMonth");
+
+
+    }
+    /// <summary>
+    /// selects a date
+    /// </summary>
+    /// <param name="Date">date to be selected</param>
+    private void SelectDate(DateTime Date)
+    {
+        onSelected.InvokeAsync(Date.ToString("dd/MM/yyyy"));
+    }
+    /// <summary>
+    /// goes to the date specified and create the calendar for it
+    /// </summary>
+    /// <returns></returns>
+    async Task GoToDate()
+    {
+        string Result = await JSRuntime.InvokeAsync<string>("GetText", "datetimepickermonth");
+        date = DateTime.ParseExact("01/" + Result.Split(" ")[0] + "/" + Result.Split(" ")[1], "dd/MMMM/yyyy", CultureInfo.InvariantCulture);
+        ShowCurrMonth = false;
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+
+
+        SetCalendar();
+    }
+    /// <summary>
+    /// sets up the days of the calendar and the formatting
+    /// </summary>
+    private void SetCalendar()
+    {
+
+        DisplayDate = date.ToString("MMMM yyyy");
+        CalendarDays.Clear();
+        int year = date.Year;
+        int month = date.Month;
+        int days = DateTime.DaysInMonth(year, month);
+        DateTime dateValue = new DateTime(year, month, 1);
+        int FirstDay = Array.IndexOf(Days, dateValue.DayOfWeek.ToString());
+        IndexOfToday = (FirstDay - 1) + (DateTime.Now.Day);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        curMonth = month.ToString();
+        if (month.ToString().Length == 1)
+        {
+            curMonth = "0" + curMonth;
+        }
+        if (FirstDay != 0)
+        {
+            DateTime dateBefore = date.AddMonths(-1);
+            int maxDays = DateTime.DaysInMonth(dateBefore.Year, dateBefore.Month);
+            for (int i = FirstDay - 1; i >= 0; i--)
+            {
+                string temp_month = dateBefore.Month.ToString();
+                if (temp_month.Length == 1)
+                {
+                    temp_month = "0" + temp_month;
+                }
+                string temp_day = (maxDays - i).ToString();
+                if (temp_day.Length == 1)
+                {
+                    temp_day = "0" + temp_day;
+                }
+                CalendarDays.Add(temp_day + "/" + temp_month + "/" + dateBefore.Year);
+            }
+        }
+        for (int i = 1; i <= days; i++)
+        {
+            string temp_month = month.ToString();
+            if (temp_month.Length == 1)
+            {
+                temp_month = "0" + temp_month;
+            }
+            string temp_day = i.ToString();
+            if (temp_day.Length == 1)
+            {
+                temp_day = "0" + temp_day;
+            }
+            CalendarDays.Add(temp_day + "/" + temp_month + "/" + year);
+        }
+        int remaining = 42 - CalendarDays.Count();
+        DateTime dateAfter = date.AddMonths(1);
+        for (int i = 1; i <= remaining; i++)
+        {
+            string temp_month = dateAfter.Month.ToString();
+            if (temp_month.Length == 1)
+            {
+                temp_month = "0" + temp_month;
+            }
+            string temp_day = i.ToString();
+            if (temp_day.Length == 1)
+            {
+                temp_day = "0" + temp_day;
+            }
+            CalendarDays.Add(temp_day + "/" + temp_month + "/" + dateAfter.Year);
+        }
+    }
+    /// <summary>
+    /// goes to the previous month
+    /// </summary>
+    /// <returns></returns>
+    async Task Previous()
+    {
+        ShowCurrMonth = false;
+        date = date.AddMonths(-1);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        SetCalendar();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+    }
+    /// <summary>
+    /// goes to the nect month
+    /// </summary>
+    /// <returns></returns>
+    async Task Next()
+    {
+        ShowCurrMonth = false;
+        date = date.AddMonths(1);
+        if (date.ToString("MM/yyyy") == DateTime.Now.ToString("MM/yyyy"))
+        {
+            ShowCurrMonth = true;
+        }
+        SetCalendar();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+    }
+    /// <summary>
+    /// goes to the current month
+    /// </summary>
+    /// <returns></returns>
+    async Task Today()
+    {
+
+        ShowCurrMonth = true;
+        date = DateTime.Now;
+        SetCalendar();
+        await JSRuntime.InvokeVoidAsync("SetDate", "datetimepickermonth", date.ToString("MMMM yyyy"));
+
+
+    }
+}

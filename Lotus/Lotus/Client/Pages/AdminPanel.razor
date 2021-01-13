@@ -1,0 +1,191 @@
+﻿@page "/AdminPanel"
+@using Lotus.Shared
+@using Lotus.Client.Shared.Components.AdminPanel
+@using System.Net.Http
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using Lotus.Client.Shared.Tools
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+
+
+
+        <div class="container-fluid px-0">
+            <div class="row mt-2 no-gutters " style="min-height: 98vh;min-width:100vw;">
+                <div class="rounded col-sm-1 row-height ml-2 " style="height:98vh; background:rgba(255, 255, 255, 0.82);border:solid black; overflow-y:auto;">
+                    <Sidebar onSelected="SetWindow" />
+                </div>
+                @if (CurrentWindow == "Staff" || CurrentWindow == "StaffSelected" || CurrentWindow == "Add")
+                {
+                    <div class="rounded col-sm-1 row-height ml-1 " style="background:rgba(255, 255, 255, 0.82);border:solid black; ">
+                        <Staff_Sidebar FilterStaff="Initialise_Staff_SideBar" staffList="@StaffList" SelectedStaff="@SelectedStaff" onChangeWindow="SetWindow" onSelected="SetStaff" />
+                    </div>
+                }
+                @if (CurrentWindow == "Members" || CurrentWindow == "SelectedMember")
+                {
+                    <div class="rounded col-sm-1 row-height ml-1 " style="background:rgba(255, 255, 255, 0.82);border:solid black; ">
+                        <Members_Sidebar onSelected="SetMember" />
+                    </div>
+                }
+                <div class=" rounded col-md  row-height ml-2 mr-2" style="background: rgba(255, 255, 255, 0.82); border: solid black;max-height:98vh;overflow:auto;">
+                    @if (CurrentWindow == "Tips" || CurrentWindow == "Staff" || CurrentWindow == "Members")
+                    {
+                        <div class="NonSelectable" id="DisplayOptionMessage"><h3 style="">@TipMessage</h3></div>
+                    }
+                    @if (CurrentWindow == "About")
+                    {
+                        <About />
+                    }
+                    @if (CurrentWindow == "Settings")
+                    {
+                        <Settings />
+                    }
+                    @if (CurrentWindow == "Services")
+                    {
+                        <Services />
+                    }
+                    @if (CurrentWindow == "StaffSelected")
+                    {
+                        <Staff onChangeWindow="SetWindow" FilterStaff="Initialise_Staff_SideBar" Id="@CurrentId" Name="@Name" Surname="@Surname" Email="@Email" Phone_Number="@Phone_number" Image="@Image" />
+                    }
+                    @if (CurrentWindow == "SelectedMember")
+                    {
+                        <Member Id="@CurrentId" Name="@Name" Surname="@Surname" Email="@Email" Phone_Number="@Phone_number" Border="@Border" Color="@Color" />
+                    }
+                    @if (CurrentWindow == "Add")
+                    {
+                        <AddStaff onReload="Initialise_Staff_SideBar" onRegister="SetStaff" />
+                    }
+                    @if (CurrentWindow == "RoleManagment")
+                    {
+                        <RoleManage/>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        
+        @if (true)
+        {
+            Aunothorized();
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code{
+        // Adding the following:  @attribute [Authorize(Roles = "Admin")]
+        //Prevents absolute access to page, can be removed to rely on AuthorizeView components
+        //If done so care needs to be done on placement of content within components
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private string TipMessage = "Please select an option from the side menu on the left";
+    private string CurrentWindow = "Tips";
+    private SettingsModel[] settings;
+    private StaffModel[] StaffList;
+    private string SelectedStaff = "none";
+    private string CurrentId;
+    private string Email, Name, Surname, Details, Phone_number, Image, Border, Color;
+    private string CurrentUserID = "DEFAULT-ID";
+    private string LastUserRegisteredID = "DEFAULT-LAST-ID";
+    /// <summary>
+    /// on initialization of the page to get the logged in used id and the list of staff members
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await authenticationStateTask).User;
+
+        if (user.IsInRole("Admin"))
+        {
+
+            CurrentUserID = await Http.GetStringAsync("api/Accounts/Grab_ID");
+            LastUserRegisteredID = await Http.GetStringAsync("api/Accounts/GrabLast_ID");
+            StaffList = await Http.GetJsonAsync<StaffModel[]>("Staff");
+        }
+    }
+    protected async Task GrabID() =>
+        CurrentUserID = await Http.GetStringAsync("api/Accounts/Grab_ID");
+
+    /// <summary>
+    /// sets up the staff sidebar
+    /// </summary>
+    /// <param name="Parameters"></param>
+    /// <returns></returns>
+    private async Task Initialise_Staff_SideBar(List<string> Parameters)
+    {
+        if (Parameters[0] == "")
+        {
+            StaffList = await Http.GetJsonAsync<StaffModel[]>("Staff");
+        }
+        else
+        {
+            StaffList = await Http.GetJsonAsync<StaffModel[]>($"Staff/Search/{Parameters[0]}");
+        }
+    }
+    /// <summary>
+    /// sets the current window to be displayed
+    /// </summary>
+    /// <param name="Parameters">parameters used to setup the windows</param>
+    void SetWindow(List<string> Parameters)
+    {
+        CurrentWindow = Parameters[0];
+        if (Parameters.Count > 1)
+        {
+            TipMessage = Parameters[1];
+        }
+        if (Parameters[0] == "Add")
+        {
+            SelectedStaff = "none";
+        }
+
+    }
+    /// <summary>
+    /// if there is no access to the page to take them back to the homepage
+    /// </summary>
+    void Aunothorized()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+    /// <summary>
+    /// sets the staff to be displayed
+    /// </summary>
+    /// <param name="Parameters">all the staffs details</param>
+    void SetStaff(List<string> Parameters)
+    {
+        CurrentWindow = "StaffSelected";
+        CurrentId = Parameters[0];
+        Name = Parameters[1];
+        Surname = Parameters[2];
+        Details = Parameters[3];
+        Email = Parameters[4];
+        Phone_number = Parameters[5];
+        Image = Parameters[6];
+        SelectedStaff = Parameters[7];
+
+    }
+    /// <summary>
+    /// sets the member to be displayed
+    /// </summary>
+    /// <param name="Parameters">all the member's details</param>
+    void SetMember(List<string> Parameters)
+    {
+        CurrentWindow = "SelectedMember";
+        CurrentId = Parameters[0];
+        Name = Parameters[1];
+        Surname = Parameters[2];
+        Details = Parameters[3];
+        Email = Parameters[4];
+        Phone_number = Parameters[5];
+        Border = Parameters[6];
+        Color = Parameters[7];
+
+    }
+
+}

@@ -1,0 +1,190 @@
+﻿@using Lotus.Shared
+@using System.Linq
+@using System
+@using Lotus.Client.Shared.Tools
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<div style="min-height:10vh">
+    <div class="form-inline mt-2">
+        <div class="form-group" style="width:100%;">
+            <div class="input-group">
+
+                <input type="text" class="form-control" placeholder="Criteria" @bind="@Criteria" @onkeypress="(e => EnterPressed(e))" id="MembersSearch">
+                <button class="btn input-group-addon btn-danger" style="outline:none;" @onclick="ClearFilter">x</button>
+            </div>
+        </div>
+        <button class="btn btn-success mt-1" style="width:100%;" @onclick="Search">Search</button>
+    </div>
+</div>
+<div style="max-height:85vh;text-align:center;overflow-y:auto">
+    @if (!isLoading)
+    {
+
+        @foreach (var member in MemberList)
+        {
+            if (SelectedMember == member.Member_Id)
+            {
+                <div class="mt-3">
+                    <div class="circleBase NonSelectable mt-1" style="display:table; height:80px;width:80px;margin: 0 auto;cursor:pointer;border-color:@member.Border;background-color:@member.Color;" id="MemberOptionSelected">
+                        <h3 style="display:table-cell; vertical-align:middle;" class="NonSelectable">@member.Name[0]@member.Surname[0]</h3>
+                    </div>
+                    <h5 class="NonSelectable">@member.Name</h5>
+                    <h5 class="NonSelectable">@member.Surname</h5>
+                </div>
+            }
+            else
+            {
+                <div class="mt-3">
+                    <div class="circleBase NonSelectable mt-1" style="display:table;height:80px;width:80px;margin: 0 auto;cursor:pointer;border-color:@member.Border;background-color:@member.Color;" id="MemberOption" @onclick="(() => SelectMember(member.Member_Id,member.Name,member.Surname,member.Notes,member.Email,member.Phone_Number.ToString(),member.Border,member.Color))">
+                        <h3 style="display:table-cell; vertical-align:middle;" class="NonSelectable">@member.Name[0]@member.Surname[0]</h3>
+                    </div>
+                    <h5 class="NonSelectable">@member.Name</h5>
+                    <h5 class="NonSelectable">@member.Surname</h5>
+                </div>
+            }
+
+        }
+
+
+    }
+
+</div>
+
+
+@code {
+    [Parameter] public EventCallback<List<string>> onSelected { get; set; }
+    private string SelectedMember = "none";
+    private MembersModel[] MemberList;
+    private bool isLoading = true;
+    private string Criteria = "";
+    private List<string> Parameters = new List<string>();
+    private List<string> MemberBorderColor = new List<string>();
+    private List<string> MemberBackgroundColor = new List<string>();
+    List<string> BorderColorList = new List<string> { "darkblue", "darkcyan", "darkgreen", "darkmagenta", "darkseagreen", "darksalmon" };
+    List<string> BackgroundColorList = new List<string> { "lightblue", "lightcyan", "lightgreen", "lightpink", "lightseagreen", "lightsalmon" };
+    /// <summary>
+    /// loads all the members as soon as the site is initialized and adds random color scheme for the border
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        MemberList = await Http.GetJsonAsync<MembersModel[]>("Members");
+
+
+        isLoading = false;
+        RandColorScheme();
+
+    }
+    /// <summary>
+    /// creates random color scheme
+    /// </summary>
+    private void RandColorScheme()
+    {
+
+
+        foreach (var member in MemberList)
+        {
+            var rand = new Random();
+            int index = rand.Next(6);
+            member.Border = BorderColorList[index];
+            member.Color = BackgroundColorList[index];
+        }
+
+    }
+    /// <summary>
+    /// used to select the current member by invoking a function passed to this component as a parameter
+    /// </summary>
+    /// <param name="id">id of the member as string</param>
+    /// <param name="name">name of the member as string</param>
+    /// <param name="surname">surname of the member as string</param>
+    /// <param name="notes">notes of the member as string</param>
+    /// <param name="email">email of the member as string</param>
+    /// <param name="phone_number">phone number of the member as long</param>
+    /// <param name="Border">border color as string</param>
+    /// <param name="Color">background color as string</param>
+    private void SelectMember(string id, string name, string surname, string notes, string email, string phone_number, string Border, string Color)
+    {
+        Parameters.Clear();
+        Parameters.Add(id);
+        Parameters.Add(name);
+        Parameters.Add(surname);
+        Parameters.Add(notes);
+        Parameters.Add(email);
+        Parameters.Add(phone_number);
+        Parameters.Add(Border);
+        Parameters.Add(Color);
+        SelectedMember = id;
+        onSelected.InvokeAsync(Parameters);
+    }
+    /// <summary>
+    /// reload members based on the criteria parsed
+    /// </summary>
+    private void UpdateAfterSearch()
+    {
+        Parameters.Clear();
+        foreach (var member in MemberList)
+        {
+            if (member.Member_Id == SelectedMember)
+            {
+                Parameters.Add(member.Member_Id);
+                Parameters.Add(member.Name);
+                Parameters.Add(member.Surname);
+                Parameters.Add(member.Notes);
+                Parameters.Add(member.Email);
+                Parameters.Add(member.Phone_Number.ToString());
+                Parameters.Add(member.Border);
+                Parameters.Add(member.Color);
+                onSelected.InvokeAsync(Parameters);
+                break;
+            }
+        }
+
+
+    }
+    /// <summary>
+    /// clears the filter
+    /// </summary>
+    /// <returns></returns>
+    private async Task ClearFilter()
+    {
+        Criteria = "";
+        await Search();
+    }
+    /// <summary>
+    /// searches base on criteria
+    /// </summary>
+    /// <returns></returns>
+    private async Task Search()
+    {
+
+        if (Criteria == "")
+        {
+            MemberList = await Http.GetJsonAsync<MembersModel[]>("Members");
+            RandColorScheme();
+        }
+        else
+        {
+            MemberList = await Http.GetJsonAsync<MembersModel[]>($"Members/Search/{Criteria}");
+            RandColorScheme();
+        }
+        UpdateAfterSearch();
+    }
+    /// <summary>
+    /// used to track if enter key is pressed in the criteria box
+    /// </summary>
+    /// <param name="args">key type</param>
+    /// <returns></returns>
+    private async Task EnterPressed(KeyboardEventArgs args)
+    {
+
+        if (args.Key == "Enter")
+        {
+            Criteria = await JSRuntime.InvokeAsync<string>("GetText", "MembersSearch");
+            await Search();
+        }
+    }
+
+}

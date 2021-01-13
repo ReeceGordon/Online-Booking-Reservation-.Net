@@ -1,0 +1,65 @@
+﻿@using Lotus.Shared
+@using Lotus.Client.Shared.Components.Home
+@using Lotus.Client.Shared.Components.MembersPanel 
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using System.Net.Http
+@using Lotus.Client.Shared.Tools
+
+@if (!isLoading)
+{
+
+
+<div class="container-fluid px-0" style="height:80vh">
+    <div class="row no-gutters">
+        <div class="col-md-12">
+            @if (CurrentWindow == "All")
+            {
+                <BookingManagment ChangeWindow="SetWindow" MemberId="@MemberId"/>
+            }
+            else if (CurrentWindow == "Booking")
+            {
+                <BookingComponent MemberEmail="@MemberEmail" ChangeWindow="SetWindow" MemberId="@MemberId"/>
+            }
+
+        </div>
+    </div>
+    <div class="row mt-1 no-gutters" style="min-height: 20vh;">
+        <div class="col-md-4">
+            <Categories_Showcase_Members />
+        </div>
+        <div class="col-md-4">
+            <Team_Carousel_Members />
+        </div>
+        <div class="col-md-4">
+            <Contact_Details />
+        </div>
+    </div>
+</div>
+}
+@code{
+    [Parameter] public string MemberId { get; set; }
+    string CurrentWindow = "All";
+    string MemberEmail = "";
+    bool isLoading = true;
+    /// <summary>
+    /// load the member email address
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        
+        MembersModel[] member = await Http.GetJsonAsync<MembersModel[]>($"Members/Get/{MemberId}");
+        MemberEmail = member[0].Email;
+        isLoading = false;
+    }
+    /// <summary>
+    /// sets the current window to be displayed
+    /// </summary>
+    /// <param name="Window">the window name to display</param>
+    void SetWindow(string Window)
+    {
+        CurrentWindow = Window;
+    }
+}

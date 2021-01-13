@@ -1,0 +1,67 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
+using System;
+using Microsoft.Extensions.Logging;
+using Lotus.Server.Controllers;
+using Lotus.Shared;
+using System.Linq;
+
+namespace ZStaffAssignmentControllerDeleteTest
+{
+    [TestClass]
+    public class UnitTest1
+    {
+
+        private static readonly ILogger<StaffAssignmentController> logger;
+
+        [TestMethod]
+        public void DeleteCategory()
+        {
+
+
+            IEnumerable<StaffAssignmentModel> staffAssignments;
+
+            string testcategoryid = "thetestid2";
+            string teststaffid = "testid2";
+            int firstcheck = 0;
+            int secondcheck = 0;
+
+            StaffAssignmentController testcontroller = new StaffAssignmentController(logger);
+
+
+            StaffAssignmentModel staffassigntest = new StaffAssignmentModel
+            {
+                Category_Id = testcategoryid,
+                Staff_Id = teststaffid
+            };
+
+
+            testcontroller.Post(staffassigntest);
+
+            staffAssignments = testcontroller.Get();
+
+            using (var sequenceEnum = staffAssignments.GetEnumerator())
+            {
+                while (sequenceEnum.MoveNext())
+                {
+                    firstcheck += 1;
+
+                }
+            }
+
+            testcontroller.DeletewithCategory(testcategoryid);
+
+            staffAssignments = testcontroller.Get();
+
+            using (var sequenceEnum = staffAssignments.GetEnumerator())
+            {
+                while (sequenceEnum.MoveNext())
+                {
+                    secondcheck += 1;
+                }
+            }
+
+            Assert.AreNotEqual(firstcheck, secondcheck);
+        }
+    }
+}
